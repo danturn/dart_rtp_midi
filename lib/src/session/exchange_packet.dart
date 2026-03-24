@@ -280,7 +280,8 @@ class ClockSyncPacket {
           timestamp3 == other.timestamp3;
 
   @override
-  int get hashCode => Object.hash(ssrc, count, timestamp1, timestamp2, timestamp3);
+  int get hashCode =>
+      Object.hash(ssrc, count, timestamp1, timestamp2, timestamp3);
 
   @override
   String toString() =>

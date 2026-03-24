@@ -60,8 +60,7 @@ class RtpMidiConfig {
       );
 
   @override
-  String toString() =>
-      'RtpMidiConfig(name: "$name", port: $port, '
+  String toString() => 'RtpMidiConfig(name: "$name", port: $port, '
       'clockSyncInterval: $clockSyncInterval, '
       'maxInvitationRetries: $maxInvitationRetries, '
       'retryBase: $invitationRetryBaseInterval, '

@@ -158,8 +158,7 @@ void main() {
         expect(result.latencyMicroseconds, 10000); // 100 ticks * 100 us/tick
       });
 
-      test('t1=100, t2=250, t3=300 -> offset=-50 ticks, latency=100 ticks',
-          () {
+      test('t1=100, t2=250, t3=300 -> offset=-50 ticks, latency=100 ticks', () {
         // offset_ticks = ((100+300) - 2*250) / 2 = (400 - 500) / 2 = -50
         // latency_ticks = (300-100) / 2 = 100
         final ck2 = createCk2(
@@ -258,9 +257,9 @@ void main() {
 
       test('very large timestamps', () {
         // Use large values that are safe for Dart integers
-        final t1 = 1000000000; // 1 billion ticks
-        final t2 = 1000000050;
-        final t3 = 1000000100;
+        const t1 = 1000000000; // 1 billion ticks
+        const t2 = 1000000050;
+        const t3 = 1000000100;
         // offset_ticks = ((1000000000+1000000100) - 2*1000000050) / 2 = 0
         // latency_ticks = (1000000100-1000000000) / 2 = 50
         final ck2 = createCk2(

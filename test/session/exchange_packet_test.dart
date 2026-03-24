@@ -39,7 +39,7 @@ void main() {
   group('ExchangePacket', () {
     group('roundtrip encode/decode', () {
       test('invitation packet roundtrips correctly', () {
-        final original = ExchangePacket(
+        const original = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 0xDEADBEEF,
           ssrc: 0x12345678,
@@ -51,7 +51,7 @@ void main() {
       });
 
       test('ok packet roundtrips correctly', () {
-        final original = ExchangePacket(
+        const original = ExchangePacket(
           command: ExchangeCommand.ok,
           initiatorToken: 0xCAFEBABE,
           ssrc: 0xABCDEF01,
@@ -63,7 +63,7 @@ void main() {
       });
 
       test('no packet roundtrips correctly', () {
-        final original = ExchangePacket(
+        const original = ExchangePacket(
           command: ExchangeCommand.no,
           initiatorToken: 0x00000001,
           ssrc: 0x00000002,
@@ -75,7 +75,7 @@ void main() {
       });
 
       test('bye packet roundtrips correctly', () {
-        final original = ExchangePacket(
+        const original = ExchangePacket(
           command: ExchangeCommand.bye,
           initiatorToken: 0xFFFFFFFF,
           ssrc: 0x87654321,
@@ -89,7 +89,7 @@ void main() {
 
     group('known binary test vectors', () {
       test('invitation packet encodes to expected bytes', () {
-        final packet = ExchangePacket(
+        const packet = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 0x00000001,
           ssrc: 0x00000002,
@@ -125,7 +125,7 @@ void main() {
       });
 
       test('ok packet encodes to expected bytes', () {
-        final packet = ExchangePacket(
+        const packet = ExchangePacket(
           command: ExchangeCommand.ok,
           initiatorToken: 0xDEADBEEF,
           ssrc: 0xCAFEBABE,
@@ -192,7 +192,7 @@ void main() {
 
     group('name edge cases', () {
       test('empty name roundtrips correctly', () {
-        final original = ExchangePacket(
+        const original = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 1,
           ssrc: 2,
@@ -221,7 +221,7 @@ void main() {
 
       test('unicode name roundtrips correctly', () {
         const unicodeName = '\u{1F3B5}MIDI\u{2665}'; // musical note + heart
-        final original = ExchangePacket(
+        const original = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 0xFF,
           ssrc: 0xAA,
@@ -235,7 +235,7 @@ void main() {
 
       test('Japanese name roundtrips correctly', () {
         const japaneseName = '\u30D4\u30A2\u30CE'; // katakana "piano"
-        final original = ExchangePacket(
+        const original = ExchangePacket(
           command: ExchangeCommand.ok,
           initiatorToken: 7,
           ssrc: 8,
@@ -248,7 +248,7 @@ void main() {
 
       test('name with spaces roundtrips correctly', () {
         const name = 'My MIDI Device';
-        final original = ExchangePacket(
+        const original = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 1,
           ssrc: 2,
@@ -276,7 +276,7 @@ void main() {
       });
 
       test('encode always writes protocol version 2', () {
-        final packet = ExchangePacket(
+        const packet = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 0,
           ssrc: 0,
@@ -288,7 +288,7 @@ void main() {
       });
 
       test('default protocolVersion is 2', () {
-        final packet = ExchangePacket(
+        const packet = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 0,
           ssrc: 0,
@@ -398,13 +398,13 @@ void main() {
 
     group('equality and hashCode', () {
       test('identical packets are equal', () {
-        final a = ExchangePacket(
+        const a = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 1,
           ssrc: 2,
           name: 'Test',
         );
-        final b = ExchangePacket(
+        const b = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 1,
           ssrc: 2,
@@ -415,13 +415,13 @@ void main() {
       });
 
       test('different commands are not equal', () {
-        final a = ExchangePacket(
+        const a = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 1,
           ssrc: 2,
           name: 'Test',
         );
-        final b = ExchangePacket(
+        const b = ExchangePacket(
           command: ExchangeCommand.ok,
           initiatorToken: 1,
           ssrc: 2,
@@ -431,13 +431,13 @@ void main() {
       });
 
       test('different tokens are not equal', () {
-        final a = ExchangePacket(
+        const a = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 1,
           ssrc: 2,
           name: 'Test',
         );
-        final b = ExchangePacket(
+        const b = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 99,
           ssrc: 2,
@@ -447,13 +447,13 @@ void main() {
       });
 
       test('different names are not equal', () {
-        final a = ExchangePacket(
+        const a = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 1,
           ssrc: 2,
           name: 'Alice',
         );
-        final b = ExchangePacket(
+        const b = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 1,
           ssrc: 2,
@@ -465,7 +465,7 @@ void main() {
 
     group('toString', () {
       test('produces readable output', () {
-        final packet = ExchangePacket(
+        const packet = ExchangePacket(
           command: ExchangeCommand.invitation,
           initiatorToken: 0xFF,
           ssrc: 0xAB,
@@ -482,7 +482,7 @@ void main() {
   group('ClockSyncPacket', () {
     group('roundtrip encode/decode', () {
       test('CK0 packet roundtrips correctly', () {
-        final original = ClockSyncPacket(
+        const original = ClockSyncPacket(
           ssrc: 0x12345678,
           count: 0,
           timestamp1: 1000,
@@ -497,7 +497,7 @@ void main() {
       });
 
       test('CK1 packet roundtrips correctly', () {
-        final original = ClockSyncPacket(
+        const original = ClockSyncPacket(
           ssrc: 0xAABBCCDD,
           count: 1,
           timestamp1: 1000,
@@ -513,7 +513,7 @@ void main() {
       });
 
       test('CK2 packet roundtrips correctly', () {
-        final original = ClockSyncPacket(
+        const original = ClockSyncPacket(
           ssrc: 0x11111111,
           count: 2,
           timestamp1: 1000,
@@ -532,7 +532,7 @@ void main() {
 
     group('known binary test vectors', () {
       test('CK0 packet encodes to expected bytes', () {
-        final packet = ClockSyncPacket(
+        const packet = ClockSyncPacket(
           ssrc: 0x00000001,
           count: 0,
           timestamp1: 0x0000000100000002, // hi=1, lo=2
@@ -590,7 +590,7 @@ void main() {
 
     group('timestamp edge cases', () {
       test('zero timestamps roundtrip', () {
-        final original = ClockSyncPacket(
+        const original = ClockSyncPacket(
           ssrc: 1,
           count: 0,
           timestamp1: 0,
@@ -603,8 +603,8 @@ void main() {
 
       test('large timestamps roundtrip', () {
         // Use a large but safe Dart integer (2^52 - 1 to stay within safe int range)
-        final largeTs = (1 << 52) - 1; // 4503599627370495
-        final original = ClockSyncPacket(
+        const largeTs = (1 << 52) - 1; // 4503599627370495
+        const original = ClockSyncPacket(
           ssrc: 1,
           count: 2,
           timestamp1: largeTs,
@@ -618,8 +618,8 @@ void main() {
       });
 
       test('timestamp with only high 32 bits set', () {
-        final ts = 0x100000000; // 2^32
-        final original = ClockSyncPacket(
+        const ts = 0x100000000; // 2^32
+        const original = ClockSyncPacket(
           ssrc: 1,
           count: 0,
           timestamp1: ts,
@@ -629,8 +629,8 @@ void main() {
       });
 
       test('timestamp with both high and low 32 bits set', () {
-        final ts = 0xABCD00001234; // mixed hi/lo
-        final original = ClockSyncPacket(
+        const ts = 0xABCD00001234; // mixed hi/lo
+        const original = ClockSyncPacket(
           ssrc: 1,
           count: 0,
           timestamp1: ts,
@@ -642,14 +642,14 @@ void main() {
 
     group('signature and command code', () {
       test('encode always writes 0xFFFF signature', () {
-        final packet = ClockSyncPacket(ssrc: 1, count: 0, timestamp1: 0);
+        const packet = ClockSyncPacket(ssrc: 1, count: 0, timestamp1: 0);
         final bytes = packet.encode();
         final view = ByteData.sublistView(bytes);
         expect(view.getUint16(0), exchangeSignature);
       });
 
       test('encode always writes CK command code', () {
-        final packet = ClockSyncPacket(ssrc: 1, count: 0, timestamp1: 0);
+        const packet = ClockSyncPacket(ssrc: 1, count: 0, timestamp1: 0);
         final bytes = packet.encode();
         final view = ByteData.sublistView(bytes);
         expect(view.getUint16(2), ClockSyncPacket.commandCode);
@@ -719,43 +719,45 @@ void main() {
 
     group('equality and hashCode', () {
       test('identical packets are equal', () {
-        final a = ClockSyncPacket(
-          ssrc: 1, count: 2, timestamp1: 100, timestamp2: 200, timestamp3: 300);
-        final b = ClockSyncPacket(
-          ssrc: 1, count: 2, timestamp1: 100, timestamp2: 200, timestamp3: 300);
+        const a = ClockSyncPacket(
+            ssrc: 1,
+            count: 2,
+            timestamp1: 100,
+            timestamp2: 200,
+            timestamp3: 300);
+        const b = ClockSyncPacket(
+            ssrc: 1,
+            count: 2,
+            timestamp1: 100,
+            timestamp2: 200,
+            timestamp3: 300);
         expect(a, equals(b));
         expect(a.hashCode, equals(b.hashCode));
       });
 
       test('different timestamps are not equal', () {
-        final a = ClockSyncPacket(
-          ssrc: 1, count: 0, timestamp1: 100);
-        final b = ClockSyncPacket(
-          ssrc: 1, count: 0, timestamp1: 200);
+        const a = ClockSyncPacket(ssrc: 1, count: 0, timestamp1: 100);
+        const b = ClockSyncPacket(ssrc: 1, count: 0, timestamp1: 200);
         expect(a, isNot(equals(b)));
       });
 
       test('different counts are not equal', () {
-        final a = ClockSyncPacket(
-          ssrc: 1, count: 0, timestamp1: 100);
-        final b = ClockSyncPacket(
-          ssrc: 1, count: 1, timestamp1: 100);
+        const a = ClockSyncPacket(ssrc: 1, count: 0, timestamp1: 100);
+        const b = ClockSyncPacket(ssrc: 1, count: 1, timestamp1: 100);
         expect(a, isNot(equals(b)));
       });
 
       test('different ssrc are not equal', () {
-        final a = ClockSyncPacket(
-          ssrc: 1, count: 0, timestamp1: 100);
-        final b = ClockSyncPacket(
-          ssrc: 2, count: 0, timestamp1: 100);
+        const a = ClockSyncPacket(ssrc: 1, count: 0, timestamp1: 100);
+        const b = ClockSyncPacket(ssrc: 2, count: 0, timestamp1: 100);
         expect(a, isNot(equals(b)));
       });
     });
 
     group('toString', () {
       test('produces readable output', () {
-        final packet = ClockSyncPacket(
-          ssrc: 0xAB, count: 1, timestamp1: 100, timestamp2: 200);
+        const packet = ClockSyncPacket(
+            ssrc: 0xAB, count: 1, timestamp1: 100, timestamp2: 200);
         final str = packet.toString();
         expect(str, contains('ClockSyncPacket'));
         expect(str, contains('count: 1'));
@@ -767,7 +769,7 @@ void main() {
 
   group('isClockSyncPacket', () {
     test('returns true for CK packets', () {
-      final ck = ClockSyncPacket(ssrc: 1, count: 0, timestamp1: 0);
+      const ck = ClockSyncPacket(ssrc: 1, count: 0, timestamp1: 0);
       expect(isClockSyncPacket(ck.encode()), isTrue);
     });
 

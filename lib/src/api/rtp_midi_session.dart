@@ -1,10 +1,10 @@
+import 'midi_message.dart';
 import '../session/session_controller.dart';
 import '../session/session_state.dart';
 
 /// An active RTP-MIDI session with a remote peer.
 ///
-/// In Phase 1, this provides connection state and session metadata only.
-/// MIDI send/receive will be added in Phase 2.
+/// Provides connection state, session metadata, and MIDI send/receive.
 class RtpMidiSession {
   final SessionController _controller;
 
@@ -31,6 +31,12 @@ class RtpMidiSession {
 
   /// Stream of session state changes.
   Stream<SessionState> get onStateChanged => _controller.onStateChanged;
+
+  /// Stream of incoming MIDI messages from the remote peer.
+  Stream<MidiMessage> get onMidiMessage => _controller.onMidiMessage;
+
+  /// Send a MIDI message to the remote peer.
+  void send(MidiMessage message) => _controller.sendMidi(message);
 
   /// Disconnect from the remote peer.
   Future<void> disconnect() => _controller.disconnect();

@@ -401,7 +401,9 @@ void main() {
   group('all packet constructors produce valid wire format', () {
     test('createInvitation encodes with correct signature and command', () {
       final bytes = createInvitation(
-        initiatorToken: 1, ssrc: 2, name: 'T',
+        initiatorToken: 1,
+        ssrc: 2,
+        name: 'T',
       ).encode();
       final view = ByteData.sublistView(bytes);
       expect(view.getUint16(0), exchangeSignature);
@@ -411,7 +413,9 @@ void main() {
 
     test('createOk encodes with correct signature and command', () {
       final bytes = createOk(
-        initiatorToken: 1, ssrc: 2, name: 'T',
+        initiatorToken: 1,
+        ssrc: 2,
+        name: 'T',
       ).encode();
       final view = ByteData.sublistView(bytes);
       expect(view.getUint16(0), exchangeSignature);
@@ -421,7 +425,9 @@ void main() {
 
     test('createNo encodes with correct signature and command', () {
       final bytes = createNo(
-        initiatorToken: 1, ssrc: 2, name: 'T',
+        initiatorToken: 1,
+        ssrc: 2,
+        name: 'T',
       ).encode();
       final view = ByteData.sublistView(bytes);
       expect(view.getUint16(0), exchangeSignature);
@@ -431,7 +437,9 @@ void main() {
 
     test('createBye encodes with correct signature and command', () {
       final bytes = createBye(
-        initiatorToken: 1, ssrc: 2, name: 'T',
+        initiatorToken: 1,
+        ssrc: 2,
+        name: 'T',
       ).encode();
       final view = ByteData.sublistView(bytes);
       expect(view.getUint16(0), exchangeSignature);

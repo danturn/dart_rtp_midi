@@ -3,6 +3,8 @@
 ///
 /// These test vectors are constructed to match the exact binary layout that
 /// macOS Audio MIDI Setup sends and expects.
+library;
+
 import 'dart:typed_data';
 
 import 'package:dart_rtp_midi/src/session/exchange_packet.dart';
@@ -59,8 +61,8 @@ void main() {
       expect(view.getUint32(12), 0xAABBCCDD, reason: 'ssrc');
 
       // Name is UTF-8 NUL-terminated
-      expect(encoded.sublist(16, encoded.length - 1),
-          'macOS Session'.codeUnits);
+      expect(
+          encoded.sublist(16, encoded.length - 1), 'macOS Session'.codeUnits);
       expect(encoded.last, 0, reason: 'NUL terminator');
     });
   });
@@ -301,7 +303,7 @@ void main() {
       // 1 hour = 3,600,000,000 microseconds / 100 = 36,000,000 ticks
       const uptimeTs = 36000000;
 
-      final ck0 = const ClockSyncPacket(
+      const ck0 = ClockSyncPacket(
         ssrc: 0xAABBCCDD,
         count: 0,
         timestamp1: uptimeTs,
@@ -317,7 +319,7 @@ void main() {
       // This exceeds 32 bits (max ~4.29 billion), testing hi/lo split
       const longUptimeTs = 43200000000;
 
-      final ck = const ClockSyncPacket(
+      const ck = ClockSyncPacket(
         ssrc: 0x12345678,
         count: 0,
         timestamp1: longUptimeTs,

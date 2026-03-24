@@ -18,15 +18,15 @@ void main() {
 
     test('transitions with different effects are not equal', () {
       const a = SessionTransition(SessionState.idle, [SessionEffect.sendBye]);
-      const b = SessionTransition(
-          SessionState.idle, [SessionEffect.emitConnected]);
+      const b =
+          SessionTransition(SessionState.idle, [SessionEffect.emitConnected]);
       expect(a, isNot(equals(b)));
     });
 
     test('transitions with different effect counts are not equal', () {
       const a = SessionTransition(SessionState.idle, [SessionEffect.sendBye]);
-      const b = SessionTransition(
-          SessionState.idle, [SessionEffect.sendBye, SessionEffect.cancelTimers]);
+      const b = SessionTransition(SessionState.idle,
+          [SessionEffect.sendBye, SessionEffect.cancelTimers]);
       expect(a, isNot(equals(b)));
     });
 
@@ -176,8 +176,7 @@ void main() {
     });
 
     test('error -> disconnected with emitError', () {
-      final result =
-          transition(SessionState.invitingData, SessionEvent.error);
+      final result = transition(SessionState.invitingData, SessionEvent.error);
       expect(result.newState, SessionState.disconnected);
       expect(result.effects, contains(SessionEffect.cancelTimers));
       expect(result.effects, contains(SessionEffect.emitError));
@@ -230,16 +229,14 @@ void main() {
     });
 
     test('byeSent -> disconnecting with sendBye', () {
-      final result =
-          transition(SessionState.connected, SessionEvent.byeSent);
+      final result = transition(SessionState.connected, SessionEvent.byeSent);
       expect(result.newState, SessionState.disconnecting);
       expect(result.effects, contains(SessionEffect.sendBye));
       expect(result.effects, contains(SessionEffect.cancelTimers));
     });
 
     test('error -> disconnected with sendBye and emitError', () {
-      final result =
-          transition(SessionState.connected, SessionEvent.error);
+      final result = transition(SessionState.connected, SessionEvent.error);
       expect(result.newState, SessionState.disconnected);
       expect(result.effects, contains(SessionEffect.cancelTimers));
       expect(result.effects, contains(SessionEffect.sendBye));
@@ -275,8 +272,8 @@ void main() {
     });
 
     test('clockSyncTimeout -> ready (fallback, schedule periodic)', () {
-      final result = transition(
-          SessionState.synchronizing, SessionEvent.clockSyncTimeout);
+      final result =
+          transition(SessionState.synchronizing, SessionEvent.clockSyncTimeout);
       expect(result.newState, SessionState.ready);
       expect(result.effects, contains(SessionEffect.schedulePeriodicClockSync));
       expect(result.effects.length, 1);
@@ -299,8 +296,7 @@ void main() {
     });
 
     test('error -> disconnected with sendBye and emitError', () {
-      final result =
-          transition(SessionState.synchronizing, SessionEvent.error);
+      final result = transition(SessionState.synchronizing, SessionEvent.error);
       expect(result.newState, SessionState.disconnected);
       expect(result.effects, contains(SessionEffect.cancelTimers));
       expect(result.effects, contains(SessionEffect.sendBye));
@@ -345,8 +341,7 @@ void main() {
     });
 
     test('byeReceived -> disconnected', () {
-      final result =
-          transition(SessionState.ready, SessionEvent.byeReceived);
+      final result = transition(SessionState.ready, SessionEvent.byeReceived);
       expect(result.newState, SessionState.disconnected);
       expect(result.effects, contains(SessionEffect.cancelTimers));
       expect(result.effects, contains(SessionEffect.emitDisconnected));
@@ -409,8 +404,7 @@ void main() {
     });
 
     test('error -> disconnected with emitError', () {
-      final result =
-          transition(SessionState.disconnecting, SessionEvent.error);
+      final result = transition(SessionState.disconnecting, SessionEvent.error);
       expect(result.newState, SessionState.disconnected);
       expect(result.effects, contains(SessionEffect.cancelTimers));
       expect(result.effects, contains(SessionEffect.emitError));
@@ -489,7 +483,8 @@ void main() {
   });
 
   group('bye flow from various states', () {
-    test('connected -> disconnecting -> disconnected on byeSent then byeReceived',
+    test(
+        'connected -> disconnecting -> disconnected on byeSent then byeReceived',
         () {
       var result = transition(SessionState.connected, SessionEvent.byeSent);
       expect(result.newState, SessionState.disconnecting);
@@ -518,81 +513,75 @@ void main() {
 
   group('byeReceived from any active state leads to disconnected', () {
     test('from invitingControl', () {
-      final result = transition(
-          SessionState.invitingControl, SessionEvent.byeReceived);
+      final result =
+          transition(SessionState.invitingControl, SessionEvent.byeReceived);
       expect(result.newState, SessionState.disconnected);
     });
 
     test('from invitingData', () {
-      final result = transition(
-          SessionState.invitingData, SessionEvent.byeReceived);
+      final result =
+          transition(SessionState.invitingData, SessionEvent.byeReceived);
       expect(result.newState, SessionState.disconnected);
     });
 
     test('from connected', () {
-      final result = transition(
-          SessionState.connected, SessionEvent.byeReceived);
+      final result =
+          transition(SessionState.connected, SessionEvent.byeReceived);
       expect(result.newState, SessionState.disconnected);
     });
 
     test('from synchronizing', () {
-      final result = transition(
-          SessionState.synchronizing, SessionEvent.byeReceived);
+      final result =
+          transition(SessionState.synchronizing, SessionEvent.byeReceived);
       expect(result.newState, SessionState.disconnected);
     });
 
     test('from ready', () {
-      final result = transition(
-          SessionState.ready, SessionEvent.byeReceived);
+      final result = transition(SessionState.ready, SessionEvent.byeReceived);
       expect(result.newState, SessionState.disconnected);
     });
 
     test('from disconnecting', () {
-      final result = transition(
-          SessionState.disconnecting, SessionEvent.byeReceived);
+      final result =
+          transition(SessionState.disconnecting, SessionEvent.byeReceived);
       expect(result.newState, SessionState.disconnected);
     });
   });
 
   group('error from any active state leads to disconnected', () {
     test('from invitingControl', () {
-      final result = transition(
-          SessionState.invitingControl, SessionEvent.error);
+      final result =
+          transition(SessionState.invitingControl, SessionEvent.error);
       expect(result.newState, SessionState.disconnected);
       expect(result.effects, contains(SessionEffect.emitError));
     });
 
     test('from invitingData', () {
-      final result = transition(
-          SessionState.invitingData, SessionEvent.error);
+      final result = transition(SessionState.invitingData, SessionEvent.error);
       expect(result.newState, SessionState.disconnected);
       expect(result.effects, contains(SessionEffect.emitError));
     });
 
     test('from connected', () {
-      final result = transition(
-          SessionState.connected, SessionEvent.error);
+      final result = transition(SessionState.connected, SessionEvent.error);
       expect(result.newState, SessionState.disconnected);
       expect(result.effects, contains(SessionEffect.emitError));
     });
 
     test('from synchronizing', () {
-      final result = transition(
-          SessionState.synchronizing, SessionEvent.error);
+      final result = transition(SessionState.synchronizing, SessionEvent.error);
       expect(result.newState, SessionState.disconnected);
       expect(result.effects, contains(SessionEffect.emitError));
     });
 
     test('from ready', () {
-      final result = transition(
-          SessionState.ready, SessionEvent.error);
+      final result = transition(SessionState.ready, SessionEvent.error);
       expect(result.newState, SessionState.disconnected);
       expect(result.effects, contains(SessionEffect.emitError));
     });
 
     test('from disconnecting', () {
-      final result = transition(
-          SessionState.disconnecting, SessionEvent.error);
+      final result = transition(SessionState.disconnecting, SessionEvent.error);
       expect(result.newState, SessionState.disconnected);
       expect(result.effects, contains(SessionEffect.emitError));
     });
@@ -601,8 +590,7 @@ void main() {
   group('periodic clock sync re-entry', () {
     test('ready -> synchronizing -> ready cycle', () {
       // Periodic sync triggers
-      var result =
-          transition(SessionState.ready, SessionEvent.sendInvitation);
+      var result = transition(SessionState.ready, SessionEvent.sendInvitation);
       expect(result.newState, SessionState.synchronizing);
       expect(result.effects, contains(SessionEffect.sendClockSync));
 

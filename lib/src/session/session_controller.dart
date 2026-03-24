@@ -1,7 +1,13 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:typed_data';
 
+import '../api/midi_message.dart';
 import '../api/rtp_midi_config.dart';
+import '../rtp/midi_command_codec.dart';
+import '../rtp/rtp_header.dart';
+import '../rtp/rtp_midi_payload.dart';
+import '../rtp/sysex_reassembly.dart';
 import '../transport/transport.dart';
 import 'clock_sync.dart';
 import 'exchange_packet.dart';
@@ -55,6 +61,15 @@ class SessionController {
   /// State change stream.
   final _stateController = StreamController<SessionState>.broadcast();
 
+  /// Incoming MIDI message stream.
+  final _midiController = StreamController<MidiMessage>.broadcast();
+
+  /// Outgoing RTP sequence number (uint16, wrapping).
+  int _outgoingSequenceNumber = 0;
+
+  /// SysEx reassembler for multi-packet SysEx messages.
+  final _sysExReassembler = SysExReassembler();
+
   /// Whether this controller has been disposed.
   bool _disposed = false;
 
@@ -100,6 +115,37 @@ class SessionController {
 
   /// The most recent clock synchronization result, if any.
   ClockSyncResult? get lastSyncResult => _lastSyncResult;
+
+  /// Stream of incoming MIDI messages from the remote peer.
+  Stream<MidiMessage> get onMidiMessage => _midiController.stream;
+
+  /// Send a MIDI message to the remote peer.
+  ///
+  /// The message is wrapped in an RTP-MIDI payload and sent via the data port.
+  /// Does nothing if the session is not in a connected/ready state.
+  void sendMidi(MidiMessage message) {
+    if (_state != SessionState.ready &&
+        _state != SessionState.connected &&
+        _state != SessionState.synchronizing) {
+      return;
+    }
+
+    final payload = RtpMidiPayload(
+      header: RtpHeader(
+        sequenceNumber: _nextSequenceNumber(),
+        timestamp: _rtpTimestamp(),
+        ssrc: _localSsrc,
+        marker: true,
+      ),
+      commands: [TimestampedMidiCommand(0, message)],
+    );
+
+    _transport.sendData(
+      payload.encode(),
+      _remoteAddress,
+      _remoteDataPort,
+    );
+  }
 
   /// Initiate an outbound connection to [address]:[port] (control port).
   ///
@@ -167,6 +213,8 @@ class SessionController {
     await _controlSub?.cancel();
     await _dataSub?.cancel();
     await _stateController.close();
+    await _midiController.close();
+    _sysExReassembler.reset();
   }
 
   // ---------------------------------------------------------------------------
@@ -177,8 +225,7 @@ class SessionController {
     if (_disposed) return;
 
     // Only process packets from the expected remote peer (or any peer if idle).
-    if (_state != SessionState.idle &&
-        datagram.address != _remoteAddress) {
+    if (_state != SessionState.idle && datagram.address != _remoteAddress) {
       return;
     }
 
@@ -201,17 +248,28 @@ class SessionController {
     if (_state == SessionState.idle) return;
     if (datagram.address != _remoteAddress) return;
 
-    final isClock = isClockSyncPacket(datagram.data);
+    final data = datagram.data;
+
+    // Check for clock sync or exchange packets (0xFFFF signature).
+    final isClock = isClockSyncPacket(data);
     if (isClock == true) {
       _handleClockSyncPacket(datagram, isControlPort: false);
       return;
     }
+    if (isClock == false) {
+      // It's an exchange packet (has 0xFFFF signature but not CK).
+      final packet = ExchangePacket.decode(data);
+      if (packet != null) {
+        _handleExchangePacket(packet, datagram.address, datagram.port,
+            isControlPort: false);
+      }
+      return;
+    }
 
-    final packet = ExchangePacket.decode(datagram.data);
-    if (packet == null) return;
-
-    _handleExchangePacket(packet, datagram.address, datagram.port,
-        isControlPort: false);
+    // Not a session protocol packet — check for RTP (version 2).
+    if (data.length >= 13 && (data[0] & 0xC0) == 0x80) {
+      _handleRtpMidiPacket(data);
+    }
   }
 
   void _handleExchangePacket(
@@ -246,8 +304,7 @@ class SessionController {
       // Control-port invitation — this is handled by the Host, which calls
       // acceptInvitation(). If we're already in a session and receive a
       // duplicate IN, re-send OK.
-      if (_state == SessionState.invitingData &&
-          packet.ssrc == _remoteSsrc) {
+      if (_state == SessionState.invitingData && packet.ssrc == _remoteSsrc) {
         _sendPacketOnControl(createOk(
           initiatorToken: packet.initiatorToken,
           ssrc: _localSsrc,
@@ -301,7 +358,8 @@ class SessionController {
   // Clock sync handling
   // ---------------------------------------------------------------------------
 
-  void _handleClockSyncPacket(Datagram datagram, {required bool isControlPort}) {
+  void _handleClockSyncPacket(Datagram datagram,
+      {required bool isControlPort}) {
     // Apple's implementation exchanges clock sync on the data port,
     // but we accept CK packets on either port for maximum compatibility.
 
@@ -350,6 +408,21 @@ class SessionController {
   /// Returns the current time as a 64-bit timestamp in 100-microsecond ticks.
   int _currentTimestamp() {
     return DateTime.now().microsecondsSinceEpoch ~/ 100;
+  }
+
+  // ---------------------------------------------------------------------------
+  // RTP-MIDI packet handling
+  // ---------------------------------------------------------------------------
+
+  void _handleRtpMidiPacket(Uint8List data) {
+    final payload = RtpMidiPayload.decode(data);
+    if (payload == null) return;
+
+    for (final cmd in payload.commands) {
+      if (!_midiController.isClosed) {
+        _midiController.add(cmd.message);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -545,4 +618,16 @@ class SessionController {
   static final _random = Random();
 
   int _generateToken() => _random.nextInt(0xFFFFFFFF);
+
+  /// Returns the current time as a 32-bit RTP timestamp (100µs ticks, truncated).
+  int _rtpTimestamp() {
+    return _currentTimestamp() & 0xFFFFFFFF;
+  }
+
+  /// Returns the next outgoing sequence number (wrapping uint16).
+  int _nextSequenceNumber() {
+    final seq = _outgoingSequenceNumber;
+    _outgoingSequenceNumber = (_outgoingSequenceNumber + 1) & 0xFFFF;
+    return seq;
+  }
 }

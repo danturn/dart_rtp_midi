@@ -41,15 +41,24 @@ void main(List<String> args) async {
 
     session.onStateChanged.listen((state) {
       print('State changed: $state');
+      if (state == SessionState.ready) {
+        // Send a test Note On when the session is ready.
+        print('Sending test Note On (C4, velocity 100)...');
+        session.send(const NoteOn(channel: 0, note: 60, velocity: 100));
+      }
       if (state == SessionState.disconnected) {
         print('Session ended.');
         exit(0);
       }
     });
 
+    // Print incoming MIDI messages.
+    session.onMidiMessage.listen((message) {
+      print('MIDI received: $message');
+    });
+
     print('');
-    print('Session is active. Press Ctrl+C to disconnect.');
-    print('(MIDI send/receive is not yet implemented — Phase 2)');
+    print('Session is active. Listening for MIDI. Press Ctrl+C to disconnect.');
 
     // Keep alive until Ctrl+C
     ProcessSignal.sigint.watch().listen((_) async {

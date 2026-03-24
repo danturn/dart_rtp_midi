@@ -30,8 +30,7 @@ class ClockSyncResult {
   int get hashCode => Object.hash(offsetMicroseconds, latencyMicroseconds);
 
   @override
-  String toString() =>
-      'ClockSyncResult(offset: ${offsetMicroseconds}us, '
+  String toString() => 'ClockSyncResult(offset: ${offsetMicroseconds}us, '
       'latency: ${latencyMicroseconds}us)';
 }
 

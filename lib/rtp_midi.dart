@@ -20,8 +20,13 @@ library;
 
 // Public API
 export 'src/api/mdns.dart'
-    show MdnsBroadcaster, MdnsDiscoverer, MdnsServiceInfo,
-         NoOpMdnsBroadcaster, NoOpMdnsDiscoverer;
+    show
+        MdnsBroadcaster,
+        MdnsDiscoverer,
+        MdnsServiceInfo,
+        NoOpMdnsBroadcaster,
+        NoOpMdnsDiscoverer;
+export 'src/api/midi_message.dart';
 export 'src/api/rtp_midi_client.dart' show RtpMidiClient, RtpMidiService;
 export 'src/api/rtp_midi_config.dart' show RtpMidiConfig;
 export 'src/api/rtp_midi_host.dart' show RtpMidiHost;

@@ -207,7 +207,8 @@ void main() {
       driver = _SessionDriver(transport: transport);
     });
 
-    test('send IN -> receive OK on control -> send IN on data -> receive OK on data -> connected',
+    test(
+        'send IN -> receive OK on control -> send IN on data -> receive OK on data -> connected',
         () {
       // Start invitation
       driver.handleEvent(SessionEvent.sendInvitation);
@@ -228,8 +229,7 @@ void main() {
 
       // Verify IN was sent on data port
       expect(transport.dataSends.length, 1);
-      final dataInvitation =
-          ExchangePacket.decode(transport.dataSends[0].data);
+      final dataInvitation = ExchangePacket.decode(transport.dataSends[0].data);
       expect(dataInvitation, isNotNull);
       expect(dataInvitation!.command, ExchangeCommand.invitation);
 
@@ -250,19 +250,21 @@ void main() {
       driver.handleEvent(SessionEvent.dataOkReceived);
       driver.handleEvent(SessionEvent.clockSyncComplete);
 
-      expect(driver.executedEffects, containsAllInOrder([
-        SessionEffect.sendControlInvitation,
-        SessionEffect.scheduleInvitationRetry,
-        SessionEffect.sendDataInvitation,
-        SessionEffect.scheduleInvitationRetry,
-        SessionEffect.cancelTimers,
-        SessionEffect.emitConnected,
-        SessionEffect.sendClockSync,
-        SessionEffect.scheduleClockSyncTimeout,
-        SessionEffect.cancelTimers,
-        SessionEffect.emitSynchronized,
-        SessionEffect.schedulePeriodicClockSync,
-      ]));
+      expect(
+          driver.executedEffects,
+          containsAllInOrder([
+            SessionEffect.sendControlInvitation,
+            SessionEffect.scheduleInvitationRetry,
+            SessionEffect.sendDataInvitation,
+            SessionEffect.scheduleInvitationRetry,
+            SessionEffect.cancelTimers,
+            SessionEffect.emitConnected,
+            SessionEffect.sendClockSync,
+            SessionEffect.scheduleClockSyncTimeout,
+            SessionEffect.cancelTimers,
+            SessionEffect.emitSynchronized,
+            SessionEffect.schedulePeriodicClockSync,
+          ]));
     });
   });
 
@@ -273,7 +275,8 @@ void main() {
       transport = MockTransport();
     });
 
-    test('receive IN on control -> send OK -> receive IN on data -> send OK -> connected',
+    test(
+        'receive IN on control -> send OK -> receive IN on data -> send OK -> connected',
         () {
       // This flow is driven by the responder side. We test that the
       // correct OK packets are created and can be decoded.
@@ -303,11 +306,9 @@ void main() {
       expect(okResponse.initiatorToken, remoteToken);
 
       // Send OK on control port
-      transport.sendControl(
-          okResponse.encode(), '192.168.1.100', 5004);
+      transport.sendControl(okResponse.encode(), '192.168.1.100', 5004);
       expect(transport.controlSends.length, 1);
-      final sentOk =
-          ExchangePacket.decode(transport.controlSends[0].data);
+      final sentOk = ExchangePacket.decode(transport.controlSends[0].data);
       expect(sentOk!.command, ExchangeCommand.ok);
       expect(sentOk.initiatorToken, remoteToken);
 
@@ -328,8 +329,7 @@ void main() {
       );
       transport.sendData(dataOk.encode(), '192.168.1.100', 5005);
       expect(transport.dataSends.length, 1);
-      final sentDataOk =
-          ExchangePacket.decode(transport.dataSends[0].data);
+      final sentDataOk = ExchangePacket.decode(transport.dataSends[0].data);
       expect(sentDataOk!.command, ExchangeCommand.ok);
       expect(sentDataOk.initiatorToken, remoteToken);
     });
@@ -355,8 +355,7 @@ void main() {
       expect(transport.dataSends, isEmpty);
 
       // Effects should include cancelTimers and emitDisconnected
-      expect(
-          driver.executedEffects, contains(SessionEffect.emitDisconnected));
+      expect(driver.executedEffects, contains(SessionEffect.emitDisconnected));
       expect(driver.executedEffects, contains(SessionEffect.cancelTimers));
     });
 
@@ -419,7 +418,8 @@ void main() {
       expect(driver.state, SessionState.ready);
     });
 
-    test('connected -> bye sent -> disconnecting -> bye received -> disconnected',
+    test(
+        'connected -> bye sent -> disconnecting -> bye received -> disconnected',
         () {
       final controlSendsBeforeBye = transport.controlSends.length;
       final dataSendsBeforeBye = transport.dataSends.length;
@@ -431,12 +431,11 @@ void main() {
       expect(transport.controlSends.length, controlSendsBeforeBye + 1);
       expect(transport.dataSends.length, dataSendsBeforeBye + 1);
 
-      final controlBye = ExchangePacket.decode(
-          transport.controlSends.last.data);
+      final controlBye =
+          ExchangePacket.decode(transport.controlSends.last.data);
       expect(controlBye!.command, ExchangeCommand.bye);
 
-      final dataBye = ExchangePacket.decode(
-          transport.dataSends.last.data);
+      final dataBye = ExchangePacket.decode(transport.dataSends.last.data);
       expect(dataBye!.command, ExchangeCommand.bye);
 
       // Remote acknowledges
@@ -627,9 +626,12 @@ void main() {
       expect(decoded, equals(ck0));
     });
 
-    test('isClockSyncPacket correctly differentiates exchange and clock sync', () {
+    test('isClockSyncPacket correctly differentiates exchange and clock sync',
+        () {
       final invitation = createInvitation(
-        initiatorToken: 1, ssrc: 2, name: 'T',
+        initiatorToken: 1,
+        ssrc: 2,
+        name: 'T',
       ).encode();
       final ck0 = createCk0(ssrc: 1, timestamp1: 100).encode();
 
