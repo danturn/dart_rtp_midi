@@ -21,74 +21,88 @@ void main() {
     });
 
     test('copyWith program makes it non-empty', () {
-      final s = ChannelState.empty.copyWith(program: () => 42);
+      final s = ChannelState.empty.copyWith(program: () => (value: 42, seq: 0));
       expect(s.isEmpty, isFalse);
-      expect(s.program, 42);
+      expect(s.program?.value, 42);
     });
 
     test('copyWith preserves other fields', () {
       final s = ChannelState.empty
-          .copyWith(program: () => 1)
-          .copyWith(controllers: {7: 100});
-      expect(s.program, 1);
-      expect(s.controllers, {7: 100});
+          .copyWith(program: () => (value: 1, seq: 0))
+          .copyWith(controllers: {7: (value: 100, seq: 0)});
+      expect(s.program?.value, 1);
+      expect(s.controllers[7]?.value, 100);
     });
 
     test('copyWith can clear a field to null', () {
-      final s = ChannelState.empty.copyWith(program: () => 5);
+      final s = ChannelState.empty.copyWith(program: () => (value: 5, seq: 0));
       final cleared = s.copyWith(program: () => null);
       expect(cleared.program, isNull);
     });
 
     test('equality for identical states', () {
       final a = ChannelState.empty.copyWith(
-        activeNotes: {60: 100, 64: 80},
+        activeNotes: {60: (value: 100, seq: 0), 64: (value: 80, seq: 0)},
       );
       final b = ChannelState.empty.copyWith(
-        activeNotes: {60: 100, 64: 80},
+        activeNotes: {60: (value: 100, seq: 0), 64: (value: 80, seq: 0)},
       );
       expect(a, equals(b));
       expect(a.hashCode, b.hashCode);
     });
 
     test('inequality when fields differ', () {
-      final a = ChannelState.empty.copyWith(program: () => 1);
-      final b = ChannelState.empty.copyWith(program: () => 2);
+      final a = ChannelState.empty.copyWith(program: () => (value: 1, seq: 0));
+      final b = ChannelState.empty.copyWith(program: () => (value: 2, seq: 0));
       expect(a, isNot(equals(b)));
     });
 
     test('inequality when maps differ', () {
-      final a = ChannelState.empty.copyWith(controllers: {1: 10});
-      final b = ChannelState.empty.copyWith(controllers: {1: 20});
+      final a =
+          ChannelState.empty.copyWith(controllers: {1: (value: 10, seq: 0)});
+      final b =
+          ChannelState.empty.copyWith(controllers: {1: (value: 20, seq: 0)});
       expect(a, isNot(equals(b)));
     });
 
     test('controllers map is unmodifiable after copyWith', () {
-      final s = ChannelState.empty.copyWith(controllers: {1: 10});
-      expect(() => s.controllers[2] = 20, throwsUnsupportedError);
+      final s =
+          ChannelState.empty.copyWith(controllers: {1: (value: 10, seq: 0)});
+      expect(() => (s.controllers as Map)[2] = (value: 20, seq: 0),
+          throwsUnsupportedError);
     });
 
     test('activeNotes map is unmodifiable after copyWith', () {
-      final s = ChannelState.empty.copyWith(activeNotes: {60: 100});
-      expect(() => s.activeNotes[61] = 50, throwsUnsupportedError);
+      final s =
+          ChannelState.empty.copyWith(activeNotes: {60: (value: 100, seq: 0)});
+      expect(() => (s.activeNotes as Map)[61] = (value: 50, seq: 0),
+          throwsUnsupportedError);
     });
 
     test('polyPressure map is unmodifiable after copyWith', () {
-      final s = ChannelState.empty.copyWith(polyPressure: {60: 50});
-      expect(() => s.polyPressure[61] = 30, throwsUnsupportedError);
+      final s =
+          ChannelState.empty.copyWith(polyPressure: {60: (value: 50, seq: 0)});
+      expect(() => (s.polyPressure as Map)[61] = (value: 30, seq: 0),
+          throwsUnsupportedError);
     });
 
     test('isEmpty with only pitchBend set', () {
       final s = ChannelState.empty.copyWith(
-        pitchBendFirst: () => 0,
-        pitchBendSecond: () => 64,
+        pitchBendFirst: () => (value: 0, seq: 0),
+        pitchBendSecond: () => (value: 64, seq: 0),
       );
       expect(s.isEmpty, isFalse);
     });
 
     test('isEmpty with only channelPressure set', () {
-      final s = ChannelState.empty.copyWith(channelPressure: () => 50);
+      final s = ChannelState.empty
+          .copyWith(channelPressure: () => (value: 50, seq: 0));
       expect(s.isEmpty, isFalse);
+    });
+
+    test('releasedNotes map is unmodifiable after copyWith', () {
+      final s = ChannelState.empty.copyWith(releasedNotes: {60: 0});
+      expect(() => (s.releasedNotes as Map)[61] = 0, throwsUnsupportedError);
     });
   });
 
@@ -110,27 +124,28 @@ void main() {
     test('withChannel returns new state with updated channel', () {
       final updated = MidiState.empty.withChannel(
         0,
-        ChannelState.empty.copyWith(program: () => 42),
+        ChannelState.empty.copyWith(program: () => (value: 42, seq: 0)),
       );
-      expect(updated.channels[0].program, 42);
+      expect(updated.channels[0].program?.value, 42);
       expect(updated.channels[1].isEmpty, isTrue);
       expect(updated.isEmpty, isFalse);
     });
 
     test('withChannel does not modify original', () {
       final original = MidiState.empty;
-      original.withChannel(3, ChannelState.empty.copyWith(program: () => 10));
+      original.withChannel(
+          3, ChannelState.empty.copyWith(program: () => (value: 10, seq: 0)));
       expect(original.channels[3].isEmpty, isTrue);
     });
 
     test('equality for identical states', () {
       final a = MidiState.empty.withChannel(
         5,
-        ChannelState.empty.copyWith(controllers: {7: 100}),
+        ChannelState.empty.copyWith(controllers: {7: (value: 100, seq: 0)}),
       );
       final b = MidiState.empty.withChannel(
         5,
-        ChannelState.empty.copyWith(controllers: {7: 100}),
+        ChannelState.empty.copyWith(controllers: {7: (value: 100, seq: 0)}),
       );
       expect(a, equals(b));
       expect(a.hashCode, b.hashCode);
@@ -139,11 +154,11 @@ void main() {
     test('inequality when different channels modified', () {
       final a = MidiState.empty.withChannel(
         0,
-        ChannelState.empty.copyWith(program: () => 1),
+        ChannelState.empty.copyWith(program: () => (value: 1, seq: 0)),
       );
       final b = MidiState.empty.withChannel(
         1,
-        ChannelState.empty.copyWith(program: () => 1),
+        ChannelState.empty.copyWith(program: () => (value: 1, seq: 0)),
       );
       expect(a, isNot(equals(b)));
     });

@@ -9,11 +9,15 @@ import 'channel_chapter_w.dart';
 import 'channel_journal.dart';
 import 'journal_header.dart';
 import 'midi_state.dart';
+import 'seq_compare.dart';
 
 /// Pure function: build recovery journal bytes from [state].
 ///
 /// Returns `null` if the state is entirely empty (no journal needed).
 /// Uses chapters P, C, W, N, T, A. Skips M and E (deferred).
+///
+/// When [checkpointSeqNum] is provided, only state entries whose seqnum
+/// is after the checkpoint are included (for journal trimming via RS).
 Uint8List? buildJournal(MidiState state, int checkpointSeqNum) {
   final journals = <ChannelJournal>[];
 
@@ -21,7 +25,7 @@ Uint8List? buildJournal(MidiState state, int checkpointSeqNum) {
     final channelState = state.channels[ch];
     if (channelState.isEmpty) continue;
 
-    final journal = _buildChannelJournal(ch, channelState);
+    final journal = _buildChannelJournal(ch, channelState, checkpointSeqNum);
     if (journal != null) {
       journals.add(journal);
     }
@@ -55,13 +59,14 @@ Uint8List? buildJournal(MidiState state, int checkpointSeqNum) {
   return result;
 }
 
-ChannelJournal? _buildChannelJournal(int channel, ChannelState state) {
-  final chapterP = _buildChapterP(state);
-  final chapterC = _buildChapterC(state);
-  final chapterW = _buildChapterW(state);
-  final chapterN = _buildChapterN(state);
-  final chapterT = _buildChapterT(state);
-  final chapterA = _buildChapterA(state);
+ChannelJournal? _buildChannelJournal(
+    int channel, ChannelState state, int checkpointSeqNum) {
+  final chapterP = _buildChapterP(state, checkpointSeqNum);
+  final chapterC = _buildChapterC(state, checkpointSeqNum);
+  final chapterW = _buildChapterW(state, checkpointSeqNum);
+  final chapterN = _buildChapterN(state, checkpointSeqNum);
+  final chapterT = _buildChapterT(state, checkpointSeqNum);
+  final chapterA = _buildChapterA(state, checkpointSeqNum);
 
   if (chapterP == null &&
       chapterC == null &&
@@ -84,50 +89,63 @@ ChannelJournal? _buildChannelJournal(int channel, ChannelState state) {
   );
 }
 
-ChannelChapterP? _buildChapterP(ChannelState state) {
+ChannelChapterP? _buildChapterP(ChannelState state, int checkpoint) {
   if (state.program == null) return null;
+  if (!seqAtOrAfter(state.program!.seq, checkpoint)) return null;
   return ChannelChapterP(
     s: true,
-    program: state.program!,
+    program: state.program!.value,
     b: state.bankMsb != null,
-    bankMsb: state.bankMsb ?? 0,
+    bankMsb: state.bankMsb?.value ?? 0,
     x: state.bankLsb != null,
-    bankLsb: state.bankLsb ?? 0,
+    bankLsb: state.bankLsb?.value ?? 0,
   );
 }
 
-ChannelChapterC? _buildChapterC(ChannelState state) {
-  if (state.controllers.isEmpty) return null;
+ChannelChapterC? _buildChapterC(ChannelState state, int checkpoint) {
   final logs = state.controllers.entries
-      .map((e) => ControllerLog(s: true, number: e.key, value: e.value))
+      .where((e) => seqAtOrAfter(e.value.seq, checkpoint))
+      .map((e) => ControllerLog(s: true, number: e.key, value: e.value.value))
       .toList();
+  if (logs.isEmpty) return null;
   return ChannelChapterC(s: true, logs: logs);
 }
 
-ChannelChapterW? _buildChapterW(ChannelState state) {
+ChannelChapterW? _buildChapterW(ChannelState state, int checkpoint) {
   if (state.pitchBendFirst == null) return null;
+  if (!seqAtOrAfter(state.pitchBendFirst!.seq, checkpoint)) return null;
   return ChannelChapterW(
     s: true,
-    first: state.pitchBendFirst!,
-    second: state.pitchBendSecond ?? 0,
+    first: state.pitchBendFirst!.value,
+    second: state.pitchBendSecond?.value ?? 0,
   );
 }
 
-ChannelChapterN? _buildChapterN(ChannelState state) {
-  if (state.activeNotes.isEmpty && state.releasedNotes.isEmpty) return null;
-  final logs = state.activeNotes.entries
-      .map((e) => NoteLog(s: true, noteNum: e.key, y: true, velocity: e.value))
+ChannelChapterN? _buildChapterN(ChannelState state, int checkpoint) {
+  final activeLogs = state.activeNotes.entries
+      .where((e) => seqAtOrAfter(e.value.seq, checkpoint))
+      .toList();
+  final releasedEntries = state.releasedNotes.entries
+      .where((e) => seqAtOrAfter(e.value, checkpoint))
       .toList();
 
-  if (state.releasedNotes.isEmpty) {
+  if (activeLogs.isEmpty && releasedEntries.isEmpty) return null;
+
+  final logs = activeLogs
+      .map((e) =>
+          NoteLog(s: true, noteNum: e.key, y: true, velocity: e.value.value))
+      .toList();
+
+  if (releasedEntries.isEmpty) {
     return ChannelChapterN(logs: logs, low: 15, high: 0);
   }
 
   // Build offbit bitmap from released notes.
-  final low = state.releasedNotes.reduce((a, b) => a < b ? a : b) ~/ 8;
-  final high = state.releasedNotes.reduce((a, b) => a > b ? a : b) ~/ 8;
+  final releasedNoteNums = releasedEntries.map((e) => e.key);
+  final low = releasedNoteNums.reduce((a, b) => a < b ? a : b) ~/ 8;
+  final high = releasedNoteNums.reduce((a, b) => a > b ? a : b) ~/ 8;
   final offBits = Uint8List(high - low + 1);
-  for (final note in state.releasedNotes) {
+  for (final note in releasedNoteNums) {
     final octet = note ~/ 8 - low;
     final bit = note % 8;
     offBits[octet] |= 0x80 >> bit; // MSB-first
@@ -137,15 +155,18 @@ ChannelChapterN? _buildChapterN(ChannelState state) {
       b: true, logs: logs, low: low, high: high, offBits: offBits);
 }
 
-ChannelChapterT? _buildChapterT(ChannelState state) {
+ChannelChapterT? _buildChapterT(ChannelState state, int checkpoint) {
   if (state.channelPressure == null) return null;
-  return ChannelChapterT(s: true, pressure: state.channelPressure!);
+  if (!seqAtOrAfter(state.channelPressure!.seq, checkpoint)) return null;
+  return ChannelChapterT(s: true, pressure: state.channelPressure!.value);
 }
 
-ChannelChapterA? _buildChapterA(ChannelState state) {
-  if (state.polyPressure.isEmpty) return null;
+ChannelChapterA? _buildChapterA(ChannelState state, int checkpoint) {
   final logs = state.polyPressure.entries
-      .map((e) => PolyAftertouchLog(s: true, noteNum: e.key, pressure: e.value))
+      .where((e) => seqAtOrAfter(e.value.seq, checkpoint))
+      .map((e) =>
+          PolyAftertouchLog(s: true, noteNum: e.key, pressure: e.value.value))
       .toList();
+  if (logs.isEmpty) return null;
   return ChannelChapterA(s: true, logs: logs);
 }

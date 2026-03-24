@@ -3,6 +3,10 @@ import 'package:dart_rtp_midi/src/rtp/journal/midi_state.dart';
 import 'package:dart_rtp_midi/src/rtp/journal/state_update.dart';
 import 'package:test/test.dart';
 
+/// Extract just the value from a `Seq<int>` map for easy assertion.
+Map<int, int> _values(Map<int, Seq<int>> m) =>
+    m.map((k, v) => MapEntry(k, v.value));
+
 void main() {
   group('updateState', () {
     group('NoteOn', () {
@@ -11,7 +15,7 @@ void main() {
           MidiState.empty,
           const NoteOn(channel: 0, note: 60, velocity: 100),
         );
-        expect(state.channels[0].activeNotes, {60: 100});
+        expect(_values(state.channels[0].activeNotes), {60: 100});
       });
 
       test('multiple notes on same channel', () {
@@ -20,7 +24,7 @@ void main() {
             state, const NoteOn(channel: 0, note: 60, velocity: 100));
         state = updateState(
             state, const NoteOn(channel: 0, note: 64, velocity: 80));
-        expect(state.channels[0].activeNotes, {60: 100, 64: 80});
+        expect(_values(state.channels[0].activeNotes), {60: 100, 64: 80});
       });
 
       test('replaces velocity for same note', () {
@@ -29,7 +33,7 @@ void main() {
             state, const NoteOn(channel: 0, note: 60, velocity: 100));
         state = updateState(
             state, const NoteOn(channel: 0, note: 60, velocity: 50));
-        expect(state.channels[0].activeNotes, {60: 50});
+        expect(_values(state.channels[0].activeNotes), {60: 50});
       });
 
       test('velocity 0 removes note (equivalent to NoteOff)', () {
@@ -47,8 +51,8 @@ void main() {
             state, const NoteOn(channel: 0, note: 60, velocity: 100));
         state = updateState(
             state, const NoteOn(channel: 1, note: 60, velocity: 80));
-        expect(state.channels[0].activeNotes, {60: 100});
-        expect(state.channels[1].activeNotes, {60: 80});
+        expect(_values(state.channels[0].activeNotes), {60: 100});
+        expect(_values(state.channels[1].activeNotes), {60: 80});
       });
     });
 
@@ -80,7 +84,7 @@ void main() {
             state, const NoteOn(channel: 0, note: 64, velocity: 80));
         state = updateState(
             state, const NoteOff(channel: 0, note: 60, velocity: 0));
-        expect(state.channels[0].activeNotes, {64: 80});
+        expect(_values(state.channels[0].activeNotes), {64: 80});
       });
 
       test('adds note to releasedNotes', () {
@@ -89,7 +93,7 @@ void main() {
             state, const NoteOn(channel: 0, note: 60, velocity: 100));
         state = updateState(
             state, const NoteOff(channel: 0, note: 60, velocity: 0));
-        expect(state.channels[0].releasedNotes, {60});
+        expect(state.channels[0].releasedNotes.keys, contains(60));
       });
 
       test('NoteOff for non-active note does not add to releasedNotes', () {
@@ -106,7 +110,7 @@ void main() {
             state, const NoteOn(channel: 0, note: 60, velocity: 100));
         state =
             updateState(state, const NoteOn(channel: 0, note: 60, velocity: 0));
-        expect(state.channels[0].releasedNotes, {60});
+        expect(state.channels[0].releasedNotes.keys, contains(60));
         expect(state.channels[0].activeNotes, isEmpty);
       });
     });
@@ -118,11 +122,11 @@ void main() {
             state, const NoteOn(channel: 0, note: 60, velocity: 100));
         state = updateState(
             state, const NoteOff(channel: 0, note: 60, velocity: 0));
-        expect(state.channels[0].releasedNotes, {60});
+        expect(state.channels[0].releasedNotes.keys, contains(60));
         state = updateState(
             state, const NoteOn(channel: 0, note: 60, velocity: 80));
         expect(state.channels[0].releasedNotes, isEmpty);
-        expect(state.channels[0].activeNotes, {60: 80});
+        expect(_values(state.channels[0].activeNotes), {60: 80});
       });
 
       test('multiple released notes accumulate', () {
@@ -135,7 +139,7 @@ void main() {
             state, const NoteOff(channel: 0, note: 60, velocity: 0));
         state = updateState(
             state, const NoteOff(channel: 0, note: 64, velocity: 0));
-        expect(state.channels[0].releasedNotes, {60, 64});
+        expect(state.channels[0].releasedNotes.keys, containsAll([60, 64]));
       });
 
       test('channel with only released notes is not empty', () {
@@ -154,7 +158,7 @@ void main() {
           MidiState.empty,
           const ControlChange(channel: 0, controller: 7, value: 100),
         );
-        expect(state.channels[0].controllers[7], 100);
+        expect(state.channels[0].controllers[7]?.value, 100);
       });
 
       test('updates existing controller', () {
@@ -163,7 +167,7 @@ void main() {
             state, const ControlChange(channel: 0, controller: 7, value: 100));
         state = updateState(
             state, const ControlChange(channel: 0, controller: 7, value: 50));
-        expect(state.channels[0].controllers[7], 50);
+        expect(state.channels[0].controllers[7]?.value, 50);
       });
 
       test('CC#0 also sets bankMsb', () {
@@ -171,8 +175,8 @@ void main() {
           MidiState.empty,
           const ControlChange(channel: 0, controller: 0, value: 5),
         );
-        expect(state.channels[0].controllers[0], 5);
-        expect(state.channels[0].bankMsb, 5);
+        expect(state.channels[0].controllers[0]?.value, 5);
+        expect(state.channels[0].bankMsb?.value, 5);
       });
 
       test('CC#32 also sets bankLsb', () {
@@ -180,8 +184,8 @@ void main() {
           MidiState.empty,
           const ControlChange(channel: 0, controller: 32, value: 3),
         );
-        expect(state.channels[0].controllers[32], 3);
-        expect(state.channels[0].bankLsb, 3);
+        expect(state.channels[0].controllers[32]?.value, 3);
+        expect(state.channels[0].bankLsb?.value, 3);
       });
 
       test('multiple controllers on same channel', () {
@@ -190,7 +194,7 @@ void main() {
             state, const ControlChange(channel: 0, controller: 7, value: 100));
         state = updateState(
             state, const ControlChange(channel: 0, controller: 11, value: 80));
-        expect(state.channels[0].controllers, {7: 100, 11: 80});
+        expect(_values(state.channels[0].controllers), {7: 100, 11: 80});
       });
     });
 
@@ -200,7 +204,7 @@ void main() {
           MidiState.empty,
           const ProgramChange(channel: 0, program: 42),
         );
-        expect(state.channels[0].program, 42);
+        expect(state.channels[0].program?.value, 42);
       });
 
       test('updates existing program', () {
@@ -209,7 +213,7 @@ void main() {
             updateState(state, const ProgramChange(channel: 0, program: 42));
         state =
             updateState(state, const ProgramChange(channel: 0, program: 10));
-        expect(state.channels[0].program, 10);
+        expect(state.channels[0].program?.value, 10);
       });
     });
 
@@ -220,8 +224,8 @@ void main() {
           const PitchBend(channel: 0, value: 8192), // center
         );
         // 8192 = 0x2000, LSB = 0x00, MSB = 0x40
-        expect(state.channels[0].pitchBendFirst, 0);
-        expect(state.channels[0].pitchBendSecond, 64);
+        expect(state.channels[0].pitchBendFirst?.value, 0);
+        expect(state.channels[0].pitchBendSecond?.value, 64);
       });
 
       test('pitch bend zero', () {
@@ -229,8 +233,8 @@ void main() {
           MidiState.empty,
           const PitchBend(channel: 0, value: 0),
         );
-        expect(state.channels[0].pitchBendFirst, 0);
-        expect(state.channels[0].pitchBendSecond, 0);
+        expect(state.channels[0].pitchBendFirst?.value, 0);
+        expect(state.channels[0].pitchBendSecond?.value, 0);
       });
 
       test('pitch bend max', () {
@@ -239,8 +243,8 @@ void main() {
           const PitchBend(channel: 0, value: 16383),
         );
         // 16383 = 0x3FFF, LSB = 0x7F, MSB = 0x7F
-        expect(state.channels[0].pitchBendFirst, 127);
-        expect(state.channels[0].pitchBendSecond, 127);
+        expect(state.channels[0].pitchBendFirst?.value, 127);
+        expect(state.channels[0].pitchBendSecond?.value, 127);
       });
     });
 
@@ -250,7 +254,7 @@ void main() {
           MidiState.empty,
           const ChannelAftertouch(channel: 0, pressure: 100),
         );
-        expect(state.channels[0].channelPressure, 100);
+        expect(state.channels[0].channelPressure?.value, 100);
       });
 
       test('updates channel pressure', () {
@@ -259,7 +263,7 @@ void main() {
             state, const ChannelAftertouch(channel: 0, pressure: 100));
         state = updateState(
             state, const ChannelAftertouch(channel: 0, pressure: 50));
-        expect(state.channels[0].channelPressure, 50);
+        expect(state.channels[0].channelPressure?.value, 50);
       });
     });
 
@@ -269,7 +273,7 @@ void main() {
           MidiState.empty,
           const PolyAftertouch(channel: 0, note: 60, pressure: 80),
         );
-        expect(state.channels[0].polyPressure, {60: 80});
+        expect(_values(state.channels[0].polyPressure), {60: 80});
       });
 
       test('multiple notes with different pressures', () {
@@ -278,7 +282,7 @@ void main() {
             state, const PolyAftertouch(channel: 0, note: 60, pressure: 80));
         state = updateState(
             state, const PolyAftertouch(channel: 0, note: 64, pressure: 50));
-        expect(state.channels[0].polyPressure, {60: 80, 64: 50});
+        expect(_values(state.channels[0].polyPressure), {60: 80, 64: 50});
       });
 
       test('updates existing note pressure', () {
@@ -287,7 +291,7 @@ void main() {
             state, const PolyAftertouch(channel: 0, note: 60, pressure: 80));
         state = updateState(
             state, const PolyAftertouch(channel: 0, note: 60, pressure: 30));
-        expect(state.channels[0].polyPressure, {60: 30});
+        expect(_values(state.channels[0].polyPressure), {60: 30});
       });
     });
 
@@ -321,8 +325,8 @@ void main() {
         state = updateState(
             state, const ControlChange(channel: 5, controller: 7, value: 80));
         expect(state.channels[0], ChannelState.empty);
-        expect(state.channels[5].activeNotes, {60: 100});
-        expect(state.channels[5].controllers[7], 80);
+        expect(_values(state.channels[5].activeNotes), {60: 100});
+        expect(state.channels[5].controllers[7]?.value, 80);
       });
     });
   });

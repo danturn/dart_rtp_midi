@@ -8,6 +8,10 @@ import 'package:dart_rtp_midi/src/rtp/journal/midi_state.dart';
 import 'package:dart_rtp_midi/src/rtp/journal/state_update.dart';
 import 'package:test/test.dart';
 
+/// Update state with seq=1 so entries pass the builder's seq > checkpoint filter.
+MidiState _update(MidiState state, MidiMessage msg) =>
+    updateState(state, msg, seq: 1);
+
 void main() {
   group('buildJournal', () {
     test('returns null for empty state', () {
@@ -21,9 +25,9 @@ void main() {
     group('header', () {
       test('has correct flags for single channel', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
-        final bytes = buildJournal(state, 42)!;
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        final bytes = buildJournal(state, 0)!;
         final header = JournalHeader.decode(bytes);
         expect(header, isNotNull);
         expect(header!.singlePacketLoss, isTrue);
@@ -31,16 +35,16 @@ void main() {
         expect(header.channelJournalsPresent, isTrue);
         expect(header.enhancedChapterC, isFalse);
         expect(header.totalChannels, 0); // 1 channel - 1 = 0
-        expect(header.checkpointSeqNum, 42);
+        expect(header.checkpointSeqNum, 0);
       });
 
       test('totalChannels matches active channel count', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
-        state = updateState(
-            state, const NoteOn(channel: 5, note: 64, velocity: 80));
-        state = updateState(
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 5, note: 64, velocity: 80));
+        state = _update(
             state, const ControlChange(channel: 9, controller: 7, value: 100));
         final bytes = buildJournal(state, 0)!;
         final header = JournalHeader.decode(bytes)!;
@@ -49,8 +53,8 @@ void main() {
 
       test('checkpoint seqnum wraps uint16', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
         final bytes = buildJournal(state, 65535)!;
         final header = JournalHeader.decode(bytes)!;
         expect(header.checkpointSeqNum, 65535);
@@ -60,8 +64,7 @@ void main() {
     group('Chapter P', () {
       test('encodes program change', () {
         var state = MidiState.empty;
-        state =
-            updateState(state, const ProgramChange(channel: 0, program: 42));
+        state = _update(state, const ProgramChange(channel: 0, program: 42));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
         expect(decoded.chapterP, isNotNull);
@@ -71,12 +74,11 @@ void main() {
 
       test('encodes program with bank select', () {
         var state = MidiState.empty;
-        state = updateState(
+        state = _update(
             state, const ControlChange(channel: 0, controller: 0, value: 5));
-        state = updateState(
+        state = _update(
             state, const ControlChange(channel: 0, controller: 32, value: 3));
-        state =
-            updateState(state, const ProgramChange(channel: 0, program: 42));
+        state = _update(state, const ProgramChange(channel: 0, program: 42));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
         expect(decoded.chapterP!.b, isTrue);
@@ -87,8 +89,8 @@ void main() {
 
       test('no Chapter P when no program change', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
         expect(decoded.chapterP, isNull);
@@ -98,7 +100,7 @@ void main() {
     group('Chapter C', () {
       test('encodes single controller', () {
         var state = MidiState.empty;
-        state = updateState(
+        state = _update(
             state, const ControlChange(channel: 0, controller: 7, value: 100));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
@@ -111,9 +113,9 @@ void main() {
 
       test('encodes multiple controllers', () {
         var state = MidiState.empty;
-        state = updateState(
+        state = _update(
             state, const ControlChange(channel: 0, controller: 7, value: 100));
-        state = updateState(
+        state = _update(
             state, const ControlChange(channel: 0, controller: 11, value: 80));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
@@ -122,7 +124,7 @@ void main() {
 
       test('no Chapter C when no controllers', () {
         var state = MidiState.empty;
-        state = updateState(state, const ProgramChange(channel: 0, program: 1));
+        state = _update(state, const ProgramChange(channel: 0, program: 1));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
         expect(decoded.chapterC, isNull);
@@ -132,8 +134,8 @@ void main() {
     group('Chapter N', () {
       test('encodes active notes', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
         expect(decoded.chapterN, isNotNull);
@@ -146,10 +148,10 @@ void main() {
 
       test('NoteOff produces offbit bitmap instead of note log', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
-        state = updateState(
-            state, const NoteOff(channel: 0, note: 60, velocity: 0));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOff(channel: 0, note: 60, velocity: 0));
         // Channel 0 has a released note — Chapter N with offbits.
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
@@ -166,10 +168,10 @@ void main() {
 
       test('multiple active notes', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 64, velocity: 80));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 64, velocity: 80));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
         expect(decoded.chapterN!.logs.length, 2);
@@ -177,8 +179,8 @@ void main() {
 
       test('no offbits (LOW=15, HIGH=0)', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
         expect(decoded.chapterN!.low, 15);
@@ -190,7 +192,7 @@ void main() {
     group('Chapter W', () {
       test('encodes pitch bend', () {
         var state = MidiState.empty;
-        state = updateState(state, const PitchBend(channel: 0, value: 8192));
+        state = _update(state, const PitchBend(channel: 0, value: 8192));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
         expect(decoded.chapterW, isNotNull);
@@ -201,8 +203,8 @@ void main() {
 
       test('no Chapter W when no pitch bend', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
         expect(decoded.chapterW, isNull);
@@ -212,8 +214,8 @@ void main() {
     group('Chapter T', () {
       test('encodes channel aftertouch', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const ChannelAftertouch(channel: 0, pressure: 100));
+        state =
+            _update(state, const ChannelAftertouch(channel: 0, pressure: 100));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
         expect(decoded.chapterT, isNotNull);
@@ -225,7 +227,7 @@ void main() {
     group('Chapter A', () {
       test('encodes poly aftertouch', () {
         var state = MidiState.empty;
-        state = updateState(
+        state = _update(
             state, const PolyAftertouch(channel: 0, note: 60, pressure: 80));
         final bytes = buildJournal(state, 0)!;
         final decoded = _decodeFirstChannel(bytes);
@@ -241,26 +243,25 @@ void main() {
       test('complex state roundtrips through encode/decode', () {
         var state = MidiState.empty;
         // Channel 0: note + CC + program + bank + pitch + pressure
-        state = updateState(
+        state = _update(
             state, const ControlChange(channel: 0, controller: 0, value: 1));
-        state = updateState(
+        state = _update(
             state, const ControlChange(channel: 0, controller: 32, value: 2));
+        state = _update(state, const ProgramChange(channel: 0, program: 42));
         state =
-            updateState(state, const ProgramChange(channel: 0, program: 42));
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
-        state = updateState(
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state = _update(
             state, const ControlChange(channel: 0, controller: 7, value: 80));
-        state = updateState(state, const PitchBend(channel: 0, value: 10000));
-        state = updateState(
-            state, const ChannelAftertouch(channel: 0, pressure: 50));
-        state = updateState(
+        state = _update(state, const PitchBend(channel: 0, value: 10000));
+        state =
+            _update(state, const ChannelAftertouch(channel: 0, pressure: 50));
+        state = _update(
             state, const PolyAftertouch(channel: 0, note: 60, pressure: 40));
         // Channel 9: note only
-        state = updateState(
-            state, const NoteOn(channel: 9, note: 36, velocity: 127));
+        state =
+            _update(state, const NoteOn(channel: 9, note: 36, velocity: 127));
 
-        final bytes = buildJournal(state, 1000)!;
+        final bytes = buildJournal(state, 0)!;
 
         // Decode header
         final header = JournalHeader.decode(bytes)!;
@@ -296,12 +297,12 @@ void main() {
 
       test('single controller roundtrips', () {
         var state = MidiState.empty;
-        state = updateState(
+        state = _update(
             state, const ControlChange(channel: 3, controller: 64, value: 127));
-        final bytes = buildJournal(state, 500)!;
+        final bytes = buildJournal(state, 0)!;
 
         final header = JournalHeader.decode(bytes)!;
-        expect(header.checkpointSeqNum, 500);
+        expect(header.checkpointSeqNum, 0);
         expect(header.totalChannels, 0);
 
         final ch = ChannelJournal.decode(bytes, JournalHeader.size)!.$1;
@@ -315,12 +316,12 @@ void main() {
     group('channel ordering', () {
       test('channels appear in ascending order', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 9, note: 36, velocity: 100));
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
-        state = updateState(
-            state, const NoteOn(channel: 5, note: 48, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 9, note: 36, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 5, note: 48, velocity: 100));
 
         final bytes = buildJournal(state, 0)!;
         var offset = JournalHeader.size;
@@ -341,10 +342,10 @@ void main() {
     group('offbit field', () {
       test('released note produces offbit bitmap', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
-        state = updateState(
-            state, const NoteOff(channel: 0, note: 60, velocity: 0));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOff(channel: 0, note: 60, velocity: 0));
         final bytes = buildJournal(state, 0)!;
         final ch = _decodeFirstChannel(bytes);
         expect(ch.chapterN, isNotNull);
@@ -356,10 +357,9 @@ void main() {
       test('offbit bitmap bit position is correct (MSB-first)', () {
         var state = MidiState.empty;
         // Note 0: octet 0, bit 0 → 0x80
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 0, velocity: 100));
         state =
-            updateState(state, const NoteOff(channel: 0, note: 0, velocity: 0));
+            _update(state, const NoteOn(channel: 0, note: 0, velocity: 100));
+        state = _update(state, const NoteOff(channel: 0, note: 0, velocity: 0));
         final bytes = buildJournal(state, 0)!;
         final ch = _decodeFirstChannel(bytes);
         expect(ch.chapterN!.low, 0);
@@ -370,14 +370,13 @@ void main() {
       test('offbit bitmap spans multiple octets', () {
         var state = MidiState.empty;
         // Note 8 (octet 1) and note 23 (octet 2)
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 8, velocity: 100));
         state =
-            updateState(state, const NoteOff(channel: 0, note: 8, velocity: 0));
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 23, velocity: 100));
-        state = updateState(
-            state, const NoteOff(channel: 0, note: 23, velocity: 0));
+            _update(state, const NoteOn(channel: 0, note: 8, velocity: 100));
+        state = _update(state, const NoteOff(channel: 0, note: 8, velocity: 0));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 23, velocity: 100));
+        state =
+            _update(state, const NoteOff(channel: 0, note: 23, velocity: 0));
         final bytes = buildJournal(state, 0)!;
         final ch = _decodeFirstChannel(bytes);
         expect(ch.chapterN!.low, 1); // 8 ~/ 8 = 1
@@ -391,12 +390,12 @@ void main() {
 
       test('active notes and offbits coexist', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 64, velocity: 80));
-        state = updateState(
-            state, const NoteOff(channel: 0, note: 60, velocity: 0));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 64, velocity: 80));
+        state =
+            _update(state, const NoteOff(channel: 0, note: 60, velocity: 0));
         // Note 64 is active, note 60 is released.
         final bytes = buildJournal(state, 0)!;
         final ch = _decodeFirstChannel(bytes);
@@ -408,12 +407,12 @@ void main() {
 
       test('re-triggered note removed from offbits', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
-        state = updateState(
-            state, const NoteOff(channel: 0, note: 60, velocity: 0));
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 80));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOff(channel: 0, note: 60, velocity: 0));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 80));
         // Note 60 is active again — no offbits needed.
         final bytes = buildJournal(state, 0)!;
         final ch = _decodeFirstChannel(bytes);
@@ -424,10 +423,10 @@ void main() {
 
       test('channel with only released notes creates a journal', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 3, note: 48, velocity: 100));
-        state = updateState(
-            state, const NoteOff(channel: 3, note: 48, velocity: 0));
+        state =
+            _update(state, const NoteOn(channel: 3, note: 48, velocity: 100));
+        state =
+            _update(state, const NoteOff(channel: 3, note: 48, velocity: 0));
         // Channel 3 has only a released note — should still get a journal.
         final bytes = buildJournal(state, 0);
         expect(bytes, isNotNull);
@@ -440,12 +439,12 @@ void main() {
 
       test('offbit roundtrips through encode/decode', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 36, velocity: 100));
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 80));
-        state = updateState(
-            state, const NoteOff(channel: 0, note: 36, velocity: 0));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 36, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 80));
+        state =
+            _update(state, const NoteOff(channel: 0, note: 36, velocity: 0));
         // Note 60 active, note 36 released.
         final bytes = buildJournal(state, 0)!;
         final ch = _decodeFirstChannel(bytes);
@@ -461,27 +460,27 @@ void main() {
 
     group('Wireshark dissector cross-validation', () {
       test('builder output matches Wireshark decode_cj_chapter_n parsing', () {
-        // Scenario: note 64 active, note 60 released, CC7=100, checkpoint=1000
+        // Scenario: note 64 active, note 60 released, CC7=100, checkpoint=0
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 64, velocity: 80));
-        state = updateState(
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 64, velocity: 80));
+        state = _update(
             state, const ControlChange(channel: 0, controller: 7, value: 100));
-        state = updateState(
-            state, const NoteOff(channel: 0, note: 60, velocity: 0));
+        state =
+            _update(state, const NoteOff(channel: 0, note: 60, velocity: 0));
 
-        final bytes = buildJournal(state, 1000)!;
+        final bytes = buildJournal(state, 0)!;
 
         // Trace through Wireshark's decode logic byte-by-byte.
 
         // --- Journal Header (3 bytes) ---
         // Byte 0: S=1, Y=0, A=1, H=0, TOTCHAN=0
         expect(bytes[0], 0xa0);
-        // Bytes 1-2: checkpoint seqnum = 1000 (0x03E8)
-        expect(bytes[1], 0x03);
-        expect(bytes[2], 0xe8);
+        // Bytes 1-2: checkpoint seqnum = 0 (0x0000)
+        expect(bytes[1], 0x00);
+        expect(bytes[2], 0x00);
 
         // --- Channel Journal Header (3 bytes) ---
         // S=1, CHAN=0, H=0
@@ -536,8 +535,8 @@ void main() {
     group('S-bit compliance', () {
       test('journal header S=1', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
         final bytes = buildJournal(state, 0)!;
         final header = JournalHeader.decode(bytes)!;
         expect(header.singlePacketLoss, isTrue);
@@ -545,8 +544,8 @@ void main() {
 
       test('channel journal S=1', () {
         var state = MidiState.empty;
-        state = updateState(
-            state, const NoteOn(channel: 0, note: 60, velocity: 100));
+        state =
+            _update(state, const NoteOn(channel: 0, note: 60, velocity: 100));
         final bytes = buildJournal(state, 0)!;
         final ch = ChannelJournal.decode(bytes, JournalHeader.size)!.$1;
         expect(ch.s, isTrue);

@@ -11,12 +11,15 @@ import '../rtp/journal/journal_builder.dart';
 import '../rtp/journal/journal_recovery.dart';
 import '../rtp/journal/midi_state.dart';
 import '../rtp/journal/sequence_tracker.dart';
+import '../rtp/journal/seq_compare.dart';
+import '../rtp/journal/state_trim.dart';
 import '../rtp/journal/state_update.dart';
 import '../rtp/sysex_reassembly.dart';
 import '../transport/transport.dart';
 import 'clock_sync.dart';
 import 'exchange_packet.dart';
 import 'invitation_protocol.dart';
+import 'rs_packet.dart';
 import 'session_state.dart';
 
 /// Orchestrates a single RTP-MIDI session lifecycle.
@@ -168,8 +171,8 @@ class SessionController {
       return;
     }
 
-    _senderState = updateState(_senderState, message);
     final seqNum = _nextSequenceNumber();
+    _senderState = updateState(_senderState, message, seq: seqNum);
     _checkpointSeqNum ??= seqNum;
     final journalBytes = buildJournal(_senderState, _checkpointSeqNum!);
 
@@ -279,12 +282,20 @@ class SessionController {
       _handleClockSyncPacket(datagram, isControlPort: true);
       return;
     }
-
-    final packet = ExchangePacket.decode(datagram.data);
-    if (packet == null) return;
-
-    _handleExchangePacket(packet, datagram.address, datagram.port,
-        isControlPort: true);
+    if (isClock == false) {
+      // Has 0xFFFF signature but not CK — check for RS before exchange.
+      if (isRsPacket(datagram.data)) {
+        _handleRsPacket(datagram.data);
+        return;
+      }
+      final packet = ExchangePacket.decode(datagram.data);
+      if (packet != null) {
+        _handleExchangePacket(packet, datagram.address, datagram.port,
+            isControlPort: true);
+      }
+      return;
+    }
+    // isClock == null: not a session protocol packet, ignore.
   }
 
   void _onDataMessage(Datagram datagram) {
@@ -496,6 +507,31 @@ class SessionController {
       if (!_midiController.isClosed) {
         _midiController.add(cmd.message);
       }
+    }
+
+    // Send RS (Receiver Feedback) when journal data is present,
+    // telling the sender we've received up to this seqnum.
+    if (payload.journalData != null) {
+      final rs = RsPacket(
+        ssrc: _localSsrc,
+        sequenceNumber: payload.header.sequenceNumber,
+      );
+      _transport.sendControl(
+        rs.encode(),
+        _remoteAddress,
+        _remoteControlPort,
+      );
+    }
+  }
+
+  void _handleRsPacket(Uint8List data) {
+    final rs = RsPacket.decode(data);
+    if (rs == null) return;
+    final confirmedSeq = rs.sequenceNumber;
+    if (_checkpointSeqNum != null &&
+        seqAtOrAfter(confirmedSeq, _checkpointSeqNum!)) {
+      _checkpointSeqNum = confirmedSeq;
+      _senderState = trimState(_senderState, confirmedSeq);
     }
   }
 

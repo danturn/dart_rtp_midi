@@ -19,7 +19,6 @@ The first open-source RTP-MIDI library for Dart/Flutter — connect to macOS Net
 > - **Recovery journal pipeline**: every outgoing packet includes a recovery journal; on packet loss, the receiver parses the journal and emits corrective MIDI messages (fixes stuck notes, wrong controllers, etc.)
 >
 > **What does NOT work yet:**
-> - RTCP-based closed-loop journal trimming (Phase 6)
 > - Published on pub.dev
 >
 > See [Roadmap](#roadmap) below for the full plan.

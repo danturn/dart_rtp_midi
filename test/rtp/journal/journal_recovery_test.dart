@@ -7,17 +7,24 @@ import 'package:dart_rtp_midi/src/rtp/journal/midi_state.dart';
 import 'package:dart_rtp_midi/src/rtp/journal/state_update.dart';
 import 'package:test/test.dart';
 
+/// Update state with seq=1 so entries pass the builder's seq > checkpoint filter.
+/// Used for sender-side state that will be encoded into journal bytes.
+MidiState _senderUpdate(MidiState state, MidiMessage msg) =>
+    updateState(state, msg, seq: 1);
+
 void main() {
   group('recoverFromJournal', () {
     group('no-op when states match', () {
       test('identical note state produces no messages', () {
         // Sender has note 60 on ch0.
         var senderState = MidiState.empty;
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const NoteOn(channel: 0, note: 60, velocity: 100));
 
-        // Receiver also has note 60 on ch0.
-        final receiverState = senderState;
+        // Receiver also has note 60 on ch0 (receiver uses default seq=0).
+        var receiverState = MidiState.empty;
+        receiverState = updateState(
+            receiverState, const NoteOn(channel: 0, note: 60, velocity: 100));
 
         final journal = buildJournal(senderState, 0)!;
         final messages = recoverFromJournal(journal, receiverState);
@@ -25,49 +32,65 @@ void main() {
       });
 
       test('identical CC state produces no messages', () {
-        var state = MidiState.empty;
-        state = updateState(
-            state, const ControlChange(channel: 0, controller: 7, value: 100));
-        final journal = buildJournal(state, 0)!;
-        expect(recoverFromJournal(journal, state), isEmpty);
+        var senderState = MidiState.empty;
+        senderState = _senderUpdate(senderState,
+            const ControlChange(channel: 0, controller: 7, value: 100));
+        var receiverState = MidiState.empty;
+        receiverState = updateState(receiverState,
+            const ControlChange(channel: 0, controller: 7, value: 100));
+        final journal = buildJournal(senderState, 0)!;
+        expect(recoverFromJournal(journal, receiverState), isEmpty);
       });
 
       test('identical program state produces no messages', () {
-        var state = MidiState.empty;
-        state =
-            updateState(state, const ProgramChange(channel: 0, program: 42));
-        final journal = buildJournal(state, 0)!;
-        expect(recoverFromJournal(journal, state), isEmpty);
+        var senderState = MidiState.empty;
+        senderState = _senderUpdate(
+            senderState, const ProgramChange(channel: 0, program: 42));
+        var receiverState = MidiState.empty;
+        receiverState = updateState(
+            receiverState, const ProgramChange(channel: 0, program: 42));
+        final journal = buildJournal(senderState, 0)!;
+        expect(recoverFromJournal(journal, receiverState), isEmpty);
       });
 
       test('identical pitch bend state produces no messages', () {
-        var state = MidiState.empty;
-        state = updateState(state, const PitchBend(channel: 0, value: 8192));
-        final journal = buildJournal(state, 0)!;
-        expect(recoverFromJournal(journal, state), isEmpty);
+        var senderState = MidiState.empty;
+        senderState = _senderUpdate(
+            senderState, const PitchBend(channel: 0, value: 8192));
+        var receiverState = MidiState.empty;
+        receiverState = updateState(
+            receiverState, const PitchBend(channel: 0, value: 8192));
+        final journal = buildJournal(senderState, 0)!;
+        expect(recoverFromJournal(journal, receiverState), isEmpty);
       });
 
       test('identical channel pressure produces no messages', () {
-        var state = MidiState.empty;
-        state = updateState(
-            state, const ChannelAftertouch(channel: 0, pressure: 100));
-        final journal = buildJournal(state, 0)!;
-        expect(recoverFromJournal(journal, state), isEmpty);
+        var senderState = MidiState.empty;
+        senderState = _senderUpdate(
+            senderState, const ChannelAftertouch(channel: 0, pressure: 100));
+        var receiverState = MidiState.empty;
+        receiverState = updateState(
+            receiverState, const ChannelAftertouch(channel: 0, pressure: 100));
+        final journal = buildJournal(senderState, 0)!;
+        expect(recoverFromJournal(journal, receiverState), isEmpty);
       });
 
       test('identical poly pressure produces no messages', () {
-        var state = MidiState.empty;
-        state = updateState(
-            state, const PolyAftertouch(channel: 0, note: 60, pressure: 80));
-        final journal = buildJournal(state, 0)!;
-        expect(recoverFromJournal(journal, state), isEmpty);
+        var senderState = MidiState.empty;
+        senderState = _senderUpdate(senderState,
+            const PolyAftertouch(channel: 0, note: 60, pressure: 80));
+        var receiverState = MidiState.empty;
+        receiverState = updateState(receiverState,
+            const PolyAftertouch(channel: 0, note: 60, pressure: 80));
+        final journal = buildJournal(senderState, 0)!;
+        expect(recoverFromJournal(journal, receiverState), isEmpty);
       });
     });
 
     group('Chapter N recovery', () {
       test('stuck note: journal has note, receiver does not → NoteOn', () {
         var senderState = MidiState.empty;
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const NoteOn(channel: 0, note: 60, velocity: 100));
 
         final journal = buildJournal(senderState, 0)!;
@@ -82,7 +105,7 @@ void main() {
           () {
         // Sender has note 64 active (but not 60).
         var senderState = MidiState.empty;
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const NoteOn(channel: 0, note: 64, velocity: 80));
 
         // Receiver thinks note 60 is on (missed NoteOff) and doesn't have 64.
@@ -101,7 +124,7 @@ void main() {
 
       test('note velocity mismatch → NoteOn with correct velocity', () {
         var senderState = MidiState.empty;
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const NoteOn(channel: 0, note: 60, velocity: 127));
 
         var receiverState = MidiState.empty;
@@ -116,9 +139,9 @@ void main() {
 
       test('multiple stuck notes', () {
         var senderState = MidiState.empty;
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const NoteOn(channel: 0, note: 60, velocity: 100));
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const NoteOn(channel: 0, note: 64, velocity: 80));
 
         final journal = buildJournal(senderState, 0)!;
@@ -136,7 +159,7 @@ void main() {
     group('Chapter C recovery', () {
       test('missed CC → ControlChange', () {
         var senderState = MidiState.empty;
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 7, value: 100));
 
         final journal = buildJournal(senderState, 0)!;
@@ -149,7 +172,7 @@ void main() {
 
       test('CC value mismatch → ControlChange with correct value', () {
         var senderState = MidiState.empty;
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 7, value: 100));
 
         var receiverState = MidiState.empty;
@@ -166,9 +189,9 @@ void main() {
 
       test('multiple CCs with some matching', () {
         var senderState = MidiState.empty;
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 7, value: 100));
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 11, value: 80));
 
         // Receiver has CC7=100 (matches) but missed CC11
@@ -187,7 +210,7 @@ void main() {
     group('Chapter P recovery', () {
       test('missed program change → ProgramChange', () {
         var senderState = MidiState.empty;
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const ProgramChange(channel: 0, program: 42));
 
         final journal = buildJournal(senderState, 0)!;
@@ -198,11 +221,11 @@ void main() {
 
       test('program with bank select recovery', () {
         var senderState = MidiState.empty;
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 0, value: 5));
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 32, value: 3));
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const ProgramChange(channel: 0, program: 42));
 
         final journal = buildJournal(senderState, 0)!;
@@ -221,8 +244,8 @@ void main() {
     group('Chapter W recovery', () {
       test('missed pitch bend → PitchBend', () {
         var senderState = MidiState.empty;
-        senderState =
-            updateState(senderState, const PitchBend(channel: 0, value: 10000));
+        senderState = _senderUpdate(
+            senderState, const PitchBend(channel: 0, value: 10000));
 
         final journal = buildJournal(senderState, 0)!;
         final messages = recoverFromJournal(journal, MidiState.empty);
@@ -233,7 +256,7 @@ void main() {
     group('Chapter T recovery', () {
       test('missed channel aftertouch → ChannelAftertouch', () {
         var senderState = MidiState.empty;
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const ChannelAftertouch(channel: 0, pressure: 100));
 
         final journal = buildJournal(senderState, 0)!;
@@ -246,7 +269,7 @@ void main() {
     group('Chapter A recovery', () {
       test('missed poly aftertouch → PolyAftertouch', () {
         var senderState = MidiState.empty;
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const PolyAftertouch(channel: 0, note: 60, pressure: 80));
 
         final journal = buildJournal(senderState, 0)!;
@@ -259,9 +282,9 @@ void main() {
     group('multi-channel recovery', () {
       test('recovers across multiple channels', () {
         var senderState = MidiState.empty;
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const NoteOn(channel: 0, note: 60, velocity: 100));
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 9, controller: 7, value: 80));
 
         final journal = buildJournal(senderState, 0)!;
@@ -294,7 +317,7 @@ void main() {
           () {
         // Sender has CC7=100 but no active notes on channel 0.
         var senderState = MidiState.empty;
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 7, value: 100));
 
         // Receiver has note 60 stuck (missed the NoteOff).
@@ -310,7 +333,7 @@ void main() {
 
       test('multiple orphan notes all get NoteOff', () {
         var senderState = MidiState.empty;
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 7, value: 100));
 
         var receiverState = MidiState.empty;
@@ -334,7 +357,7 @@ void main() {
 
       test('no spurious NoteOff when receiver also has no notes', () {
         var senderState = MidiState.empty;
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 7, value: 100));
 
         // Receiver has CC but no notes — should only get CC recovery.
@@ -352,7 +375,7 @@ void main() {
           () {
         // Sender has note 64 active.
         var senderState = MidiState.empty;
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const NoteOn(channel: 0, note: 64, velocity: 80));
 
         // Receiver has note 60 active.
@@ -373,11 +396,11 @@ void main() {
     group('bank select deduplication', () {
       test('no duplicate CC#0/CC#32 when Chapter P has bank select', () {
         var senderState = MidiState.empty;
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 0, value: 5));
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 32, value: 3));
-        senderState = updateState(
+        senderState = _senderUpdate(
             senderState, const ProgramChange(channel: 0, program: 42));
 
         final journal = buildJournal(senderState, 0)!;
@@ -395,9 +418,9 @@ void main() {
       test('CC#0/CC#32 still emitted from Chapter C when no Chapter P', () {
         // Set bank select but no program change — Chapter P won't exist.
         var senderState = MidiState.empty;
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 0, value: 5));
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 32, value: 3));
 
         final journal = buildJournal(senderState, 0)!;
@@ -415,7 +438,7 @@ void main() {
     group('Chapter C A-bit handling', () {
       test('A=0 uses value field directly', () {
         var senderState = MidiState.empty;
-        senderState = updateState(senderState,
+        senderState = _senderUpdate(senderState,
             const ControlChange(channel: 0, controller: 64, value: 127));
 
         final journal = buildJournal(senderState, 0)!;
@@ -428,7 +451,6 @@ void main() {
 
       test('A=1 T=0 toggle tool: odd count → on (127)', () {
         // CC#64 sustain, A=1, T=0, ALT=1 (one toggle → "on")
-        // Byte: [A=1][T=0][ALT=000001] = 0x81
         final journalBytes = _buildJournalWithChapterC(
           checkpointSeqNum: 0,
           channel: 0,

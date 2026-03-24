@@ -50,14 +50,14 @@ void _recoverChapterP(ChannelJournal journal, int ch, ChannelState localCh,
   if (p == null) return;
 
   // Emit bank select if needed before program change.
-  if (p.b && p.bankMsb != (localCh.bankMsb ?? -1)) {
+  if (p.b && p.bankMsb != (localCh.bankMsb?.value ?? -1)) {
     messages.add(ControlChange(channel: ch, controller: 0, value: p.bankMsb));
   }
-  if (p.x && p.bankLsb != (localCh.bankLsb ?? -1)) {
+  if (p.x && p.bankLsb != (localCh.bankLsb?.value ?? -1)) {
     messages.add(ControlChange(channel: ch, controller: 32, value: p.bankLsb));
   }
 
-  if (p.program != localCh.program) {
+  if (p.program != localCh.program?.value) {
     messages.add(ProgramChange(channel: ch, program: p.program));
   }
 }
@@ -94,7 +94,7 @@ void _recoverChapterC(ChannelJournal journal, int ch, ChannelState localCh,
     }
 
     // A=0: value encoding — use the value directly.
-    final localValue = localCh.controllers[log.number];
+    final localValue = localCh.controllers[log.number]?.value;
     if (localValue != log.value) {
       messages.add(
           ControlChange(channel: ch, controller: log.number, value: log.value));
@@ -109,7 +109,7 @@ void _recoverToggle(int ch, int controller, int toggleCount,
   final shouldBeOn = (toggleCount % 2) == 1;
   final targetValue = shouldBeOn ? 127 : 0;
   // Treat absent controller as "off" (0) — the MIDI default.
-  final localValue = localCh.controllers[controller] ?? 0;
+  final localValue = localCh.controllers[controller]?.value ?? 0;
 
   if (localValue != targetValue) {
     messages.add(
@@ -122,8 +122,8 @@ void _recoverChapterW(ChannelJournal journal, int ch, ChannelState localCh,
   final w = journal.chapterW;
   if (w == null) return;
 
-  if (w.first != (localCh.pitchBendFirst ?? -1) ||
-      w.second != (localCh.pitchBendSecond ?? -1)) {
+  if (w.first != (localCh.pitchBendFirst?.value ?? -1) ||
+      w.second != (localCh.pitchBendSecond?.value ?? -1)) {
     final value = (w.second & 0x7F) << 7 | (w.first & 0x7F);
     messages.add(PitchBend(channel: ch, value: value));
   }
@@ -147,7 +147,7 @@ void _recoverChapterN(ChannelJournal journal, int ch, ChannelState localCh,
 
   // Notes in journal but not locally active → emit NoteOn.
   for (final entry in journalNotes.entries) {
-    final localVel = localCh.activeNotes[entry.key];
+    final localVel = localCh.activeNotes[entry.key]?.value;
     if (localVel == null || localVel != entry.value) {
       messages.add(NoteOn(channel: ch, note: entry.key, velocity: entry.value));
     }
@@ -166,7 +166,7 @@ void _recoverChapterT(ChannelJournal journal, int ch, ChannelState localCh,
   final t = journal.chapterT;
   if (t == null) return;
 
-  if (t.pressure != (localCh.channelPressure ?? -1)) {
+  if (t.pressure != (localCh.channelPressure?.value ?? -1)) {
     messages.add(ChannelAftertouch(channel: ch, pressure: t.pressure));
   }
 }
@@ -177,7 +177,7 @@ void _recoverChapterA(ChannelJournal journal, int ch, ChannelState localCh,
   if (a == null) return;
 
   for (final log in a.logs) {
-    final localPressure = localCh.polyPressure[log.noteNum];
+    final localPressure = localCh.polyPressure[log.noteNum]?.value;
     if (localPressure != log.pressure) {
       messages.add(PolyAftertouch(
           channel: ch, note: log.noteNum, pressure: log.pressure));
