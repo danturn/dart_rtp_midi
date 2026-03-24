@@ -8,16 +8,18 @@ The first open-source RTP-MIDI library for Dart/Flutter — connect to macOS Net
 
 > **This library is under active development and is not yet ready for production use.**
 >
-> **What works now (Phases 1-2):**
+> **What works now (Phases 1-3):**
 > - Session discovery, invitation handshake (IN/OK/NO/BY), and graceful disconnect
 > - Clock synchronization (CK0/CK1/CK2 three-way exchange)
 > - Host mode (accept inbound connections) and Client mode (discover/connect outbound)
 > - Full state machine with exponential backoff retries
 > - Send and receive all MIDI 1.0 messages (channel voice, system common, system real-time, SysEx)
 > - RTP header codec, variable-length delta timestamps, SysEx reassembly
+> - Recovery journal codecs: journal header + system chapters (D, V, Q, F, X)
 >
 > **What does NOT work yet:**
-> - Recovery journal for packet loss resilience (Phases 3-4)
+> - Recovery journal channel chapters (Phase 4)
+> - Wire journal into send/receive pipeline (Phase 5)
 > - Published on pub.dev
 >
 > See [Roadmap](#roadmap) below for the full plan.
@@ -148,7 +150,7 @@ Apple's CoreMIDI requires multiple rapid clock sync exchanges at startup before 
 
 ## Testing
 
-390 tests covering all codecs, state machine, and MIDI roundtrip integration.
+543 tests covering all codecs, state machine, recovery journal, and MIDI roundtrip integration.
 
 ```bash
 dart test                            # Run all tests
@@ -182,7 +184,7 @@ Key Apple-specific requirements handled automatically:
 |-------|-------------|--------|
 | 1 | **Session management** — invitation handshake, clock sync, bye, state machine | Done |
 | 2 | **RTP MIDI payload** — send/receive MIDI messages, RTP header, delta timestamps, SysEx reassembly | Done |
-| 3 | **Recovery journal: system chapters** — D, V, Q, F, X chapters for system message resilience | Planned |
+| 3 | **Recovery journal: system chapters** — D, V, Q, F, X chapters for system message resilience | Done |
 | 4 | **Recovery journal: channel chapters** — P, C, M, W, N, E, T, A chapters for channel message resilience | Planned |
 | 5 | **Integration + checkpoint management** — wire journal into send/receive pipeline, receiver feedback | Planned |
 | 6 | **Polish + publish** — docs, examples, pub.dev package, CI, interop testing | Planned |
