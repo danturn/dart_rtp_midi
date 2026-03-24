@@ -188,8 +188,7 @@ Key Apple-specific requirements handled automatically:
 | 3 | **Recovery journal: system chapters** — D, V, Q, F, X chapters for system message resilience | Done |
 | 4 | **Recovery journal: channel chapters** — P, C, M, W, N, E, T, A chapters for channel message resilience | Done |
 | 5 | **Recovery journal pipeline** — wire journal into send/receive, packet loss detection, corrective MIDI emission, offbit NoteOff bitmap, Chapter C toggle tool recovery | Done |
-| 6 | **RTCP closed-loop trimming** — checkpoint advancement via RTCP feedback, journal size reduction | Planned |
-| 7 | **Polish + publish** — docs, examples, pub.dev package, CI, interop testing | Planned |
+| 6 | **Polish + publish** — docs, examples, pub.dev package, CI, interop testing | Planned |
 
 ## License
 
