@@ -70,6 +70,9 @@ class SessionController {
   /// SysEx reassembler for multi-packet SysEx messages.
   final _sysExReassembler = SysExReassembler();
 
+  /// Whether startup rapid sync has been done.
+  bool _startupSyncDone = false;
+
   /// Whether this controller has been disposed.
   bool _disposed = false;
 
@@ -594,6 +597,20 @@ class SessionController {
 
   void _schedulePeriodicClockSync() {
     _periodicClockSyncTimer?.cancel();
+
+    // On first ready, send rapid startup sync exchanges.
+    // Apple's doc: "During startup, the initiator should send synchronization
+    // exchanges more frequently" — required for Apple to route MIDI.
+    if (!_startupSyncDone) {
+      _startupSyncDone = true;
+      for (var i = 0; i < 5; i++) {
+        Future.delayed(Duration(milliseconds: 100 * (i + 1)), () {
+          if (_disposed) return;
+          _doSendClockSync();
+        });
+      }
+    }
+
     _periodicClockSyncTimer = Timer(_config.clockSyncInterval, () {
       if (_disposed) return;
       // Trigger a new clock sync exchange via the state machine.
