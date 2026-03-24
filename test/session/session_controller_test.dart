@@ -638,6 +638,56 @@ void main() {
     });
   });
 
+  group('Clock sync uses data port', () {
+    late MockTransport transport;
+    late _SessionDriver driver;
+
+    setUp(() {
+      transport = MockTransport();
+      driver = _SessionDriver(transport: transport);
+      driver.handleEvent(SessionEvent.sendInvitation);
+      driver.handleEvent(SessionEvent.controlOkReceived);
+      driver.handleEvent(SessionEvent.dataOkReceived);
+    });
+
+    test('CK0 is sent on the data port, not the control port', () {
+      // After connection, CK0 should appear in dataSends (not controlSends)
+      final controlCkPackets = transport.controlSends
+          .where((s) => isClockSyncPacket(s.data) == true)
+          .toList();
+      final dataCkPackets = transport.dataSends
+          .where((s) => isClockSyncPacket(s.data) == true)
+          .toList();
+
+      expect(controlCkPackets, isEmpty,
+          reason: 'CK packets should not be sent on control port');
+      expect(dataCkPackets, hasLength(1),
+          reason: 'CK0 should be sent on data port');
+      expect(ClockSyncPacket.decode(dataCkPackets[0].data)!.count, 0);
+    });
+
+    test('CK0 is sent to the remote data port', () {
+      final ckSend = transport.dataSends
+          .where((s) => isClockSyncPacket(s.data) == true)
+          .first;
+      expect(ckSend.port, driver.remoteDataPort);
+      expect(ckSend.address, driver.remoteAddress);
+    });
+
+    test('clock sync retry also uses data port', () {
+      final dataSendsBefore = transport.dataSends.length;
+
+      driver.handleEvent(SessionEvent.clockSyncTimeout);
+
+      final newDataCk = transport.dataSends
+          .skip(dataSendsBefore)
+          .where((s) => isClockSyncPacket(s.data) == true)
+          .toList();
+      expect(newDataCk, hasLength(1));
+      expect(ClockSyncPacket.decode(newDataCk[0].data)!.count, 0);
+    });
+  });
+
   group('Retry delay integration', () {
     test('retry delays follow exponential backoff pattern', () {
       final delays = <Duration>[];
