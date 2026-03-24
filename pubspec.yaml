@@ -1,0 +1,15 @@
+name: dart_rtp_midi
+description: >-
+  Cross-platform RTP-MIDI (RFC 6295) implementation in pure Dart.
+  Network MIDI transport for iOS, Android, macOS, Windows, and Linux.
+version: 0.1.0
+repository: https://github.com/danturn/dart_rtp_midi
+issue_tracker: https://github.com/danturn/dart_rtp_midi/issues
+
+environment:
+  sdk: ^3.5.0
+
+dev_dependencies:
+  test: ^1.25.0
+  mocktail: ^1.0.0
+  lints: ^5.0.0
