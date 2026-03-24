@@ -302,8 +302,8 @@ class SessionController {
   // ---------------------------------------------------------------------------
 
   void _handleClockSyncPacket(Datagram datagram, {required bool isControlPort}) {
-    // Clock sync is exchanged on the control port.
-    if (!isControlPort) return;
+    // Apple's implementation exchanges clock sync on the data port,
+    // but we accept CK packets on either port for maximum compatibility.
 
     final ck = ClockSyncPacket.decode(datagram.data);
     if (ck == null) return;
@@ -339,10 +339,11 @@ class SessionController {
   }
 
   void _sendClockSyncPacket(ClockSyncPacket packet) {
-    _transport.sendControl(
+    // Apple's implementation exchanges clock sync on the data port.
+    _transport.sendData(
       packet.encode(),
       _remoteAddress,
-      _remoteControlPort,
+      _remoteDataPort,
     );
   }
 
