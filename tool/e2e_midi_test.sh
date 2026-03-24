@@ -78,27 +78,31 @@ if ! command -v sendmidi &>/dev/null; then
   install_tool sendmidi "$SENDMIDI_URL"
 fi
 
-# --- Check Network MIDI session ---
+# --- Check / auto-detect Network MIDI device ---
 
-echo "Checking for Network MIDI device '$MIDI_DEV'..."
-if receivemidi list 2>/dev/null | grep -q "$MIDI_DEV"; then
+AVAILABLE_DEVICES="$(receivemidi list 2>/dev/null || true)"
+DEVICE_COUNT="$(echo "$AVAILABLE_DEVICES" | grep -c . || true)"
+
+if echo "$AVAILABLE_DEVICES" | grep -q "$MIDI_DEV"; then
   echo "Found MIDI device: $MIDI_DEV"
-else
+elif [[ "$DEVICE_COUNT" -eq 1 ]] && [[ -n "$AVAILABLE_DEVICES" ]]; then
+  MIDI_DEV="$(echo "$AVAILABLE_DEVICES" | head -1)"
+  echo "Auto-detected MIDI device: $MIDI_DEV"
+elif [[ "$DEVICE_COUNT" -gt 1 ]]; then
+  echo "MIDI device '$MIDI_DEV' not found. Available devices:"
+  echo "$AVAILABLE_DEVICES"
   echo ""
-  echo "WARNING: MIDI device '$MIDI_DEV' not found."
-  echo "Available devices:"
-  receivemidi list 2>/dev/null || true
+  echo "Re-run with the correct device name:"
+  echo "  $0 $REMOTE_IP $PORT \"<device-name>\""
+  exit 1
+else
+  echo "No MIDI devices found."
   echo ""
   echo "One-time setup required:"
   echo "  1. Open Audio MIDI Setup > Window > Show MIDI Studio > double-click Network"
   echo "  2. Click '+' under 'My Sessions' to create a session"
   echo "  3. Tick the checkbox next to it to enable"
-  echo ""
-  read -p "Continue anyway? (y/n) " -n 1 -r
-  echo ""
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    exit 1
-  fi
+  exit 1
 fi
 echo ""
 
