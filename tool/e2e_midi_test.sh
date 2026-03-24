@@ -2,37 +2,28 @@
 #
 # End-to-end MIDI message test against macOS Network MIDI.
 #
+# Self-contained: installs tools, enables Network MIDI, runs tests.
+#
 # Sends every MIDI message type from Dart, captures what the Mac receives
 # via receivemidi (independent CoreMIDI decoder), and diffs against expected.
 # Then sends from sendmidi on the Mac and verifies Dart decodes correctly.
 #
-# Prerequisites:
-#   - macOS with Network MIDI session enabled (Audio MIDI Setup)
-#   - receivemidi and sendmidi installed (this script offers to install them)
-#
 # Usage:
-#   ./tool/e2e_midi_test.sh <remote-ip> [port] [midi-device-name]
+#   ./tool/e2e_midi_test.sh [remote-ip] [port] [midi-device-name]
 #
-# Example:
-#   ./tool/e2e_midi_test.sh 192.168.1.89 5004 "Network Session 1"
+# All arguments are optional. Defaults to local loopback on port 5004.
+#
+# Examples:
+#   ./tool/e2e_midi_test.sh                          # loopback on this Mac
+#   ./tool/e2e_midi_test.sh 192.168.1.89 5004        # remote Mac
 
 set -euo pipefail
 
-REMOTE_IP="${1:-}"
+# Default to this machine's LAN IP for loopback testing.
+DEFAULT_IP="$(ipconfig getifaddr en0 2>/dev/null || echo "127.0.0.1")"
+REMOTE_IP="${1:-$DEFAULT_IP}"
 PORT="${2:-5004}"
 MIDI_DEV="${3:-Network Session 1}"
-
-if [[ -z "$REMOTE_IP" ]]; then
-  echo "Usage: $0 <remote-ip> [port] [midi-device-name]"
-  echo ""
-  echo "Example: $0 192.168.1.89 5004 \"Network Session 1\""
-  echo ""
-  echo "Setup:"
-  echo "  1. On the Mac: Audio MIDI Setup > Network > create/enable a session"
-  echo "  2. Note the session name (default: 'Network Session 1')"
-  echo "  3. Run this script from the dart_rtp_midi directory"
-  exit 1
-fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -86,6 +77,30 @@ fi
 if ! command -v sendmidi &>/dev/null; then
   install_tool sendmidi "$SENDMIDI_URL"
 fi
+
+# --- Check Network MIDI session ---
+
+echo "Checking for Network MIDI device '$MIDI_DEV'..."
+if receivemidi list 2>/dev/null | grep -q "$MIDI_DEV"; then
+  echo "Found MIDI device: $MIDI_DEV"
+else
+  echo ""
+  echo "WARNING: MIDI device '$MIDI_DEV' not found."
+  echo "Available devices:"
+  receivemidi list 2>/dev/null || true
+  echo ""
+  echo "One-time setup required:"
+  echo "  1. Open Audio MIDI Setup > Window > Show MIDI Studio > double-click Network"
+  echo "  2. Click '+' under 'My Sessions' to create a session"
+  echo "  3. Tick the checkbox next to it to enable"
+  echo ""
+  read -p "Continue anyway? (y/n) " -n 1 -r
+  echo ""
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    exit 1
+  fi
+fi
+echo ""
 
 echo "=== E2E MIDI Message Test ==="
 echo "Remote: $REMOTE_IP:$PORT"

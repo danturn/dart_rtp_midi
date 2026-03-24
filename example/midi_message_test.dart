@@ -36,17 +36,42 @@ void main(List<String> args) async {
   );
 
   try {
+    print('Initiating connection...');
     final session = await client.connectToAddress(address, port);
-    print('Connected to "${session.remoteName}"');
+    print('Session created. State: ${session.state}');
+    print('Remote: "${session.remoteName}" @ ${session.remoteAddress}');
+
+    session.onStateChanged.listen((state) {
+      print('State: $state');
+    });
 
     // Print all incoming MIDI.
     session.onMidiMessage.listen((msg) {
       print('  << RECV: $msg');
     });
 
-    // Wait for ready state.
+    // Wait for ready state with timeout.
     if (session.state != SessionState.ready) {
-      await session.onStateChanged.firstWhere((s) => s == SessionState.ready);
+      print('Waiting for session to reach ready state...');
+      try {
+        await session.onStateChanged
+            .firstWhere((s) => s == SessionState.ready)
+            .timeout(const Duration(seconds: 10));
+      } on TimeoutException {
+        print('');
+        print('ERROR: Timed out waiting for session to become ready.');
+        print('Current state: ${session.state}');
+        print('');
+        print('Make sure a Network MIDI session is running on $address:$port.');
+        print('One-time setup in Audio MIDI Setup:');
+        print(
+            '  1. Open Audio MIDI Setup > Window > Show MIDI Studio > double-click Network');
+        print('  2. Click "+" under "My Sessions" to create a session');
+        print('  3. Tick the checkbox next to it to enable');
+        await session.disconnect();
+        await client.dispose();
+        exit(1);
+      }
     }
     print('Session ready. Starting message test...\n');
 
