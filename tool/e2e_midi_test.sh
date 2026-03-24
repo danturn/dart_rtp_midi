@@ -39,28 +39,53 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-# --- Tool checks ---
+# --- Tool checks and auto-install ---
 
-check_tool() {
-  local tool="$1"
-  if ! command -v "$tool" &>/dev/null; then
-    echo "ERROR: '$tool' not found."
-    echo ""
-    echo "Install via pre-built packages:"
-    echo "  # Download from GitHub releases:"
-    echo "  curl -LO https://github.com/gbevin/ReceiveMIDI/releases/download/1.4.4/receivemidi-macOS-1.4.4.zip"
-    echo "  curl -LO https://github.com/gbevin/SendMIDI/releases/download/1.3.1/sendmidi-macOS-1.3.1.zip"
-    echo "  unzip receivemidi-macOS-1.4.4.zip && sudo installer -pkg receivemidi-macos-1.4.4.pkg -target /"
-    echo "  unzip sendmidi-macOS-1.3.1.zip && sudo installer -pkg sendmidi-macos-1.3.1.pkg -target /"
-    echo ""
-    echo "Or with full Xcode installed:"
-    echo "  brew install gbevin/tools/receivemidi gbevin/tools/sendmidi"
+RECEIVEMIDI_URL="https://github.com/gbevin/ReceiveMIDI/releases/download/1.4.4/receivemidi-macOS-1.4.4.zip"
+SENDMIDI_URL="https://github.com/gbevin/SendMIDI/releases/download/1.3.1/sendmidi-macOS-1.3.1.zip"
+
+install_tool() {
+  local name="$1"
+  local url="$2"
+  local zip_name="${url##*/}"
+  local pkg_name
+
+  echo "$name not found. Installing..."
+  echo ""
+
+  cd /tmp
+  curl -LO "$url"
+  unzip -o "$zip_name"
+
+  # The pkg name uses lowercase and may differ from the zip name.
+  pkg_name="$(ls -1 ${name}*.pkg 2>/dev/null | head -1 || ls -1 ${name,,}*.pkg 2>/dev/null | head -1)"
+
+  if [[ -z "$pkg_name" ]]; then
+    echo "ERROR: Could not find .pkg file after unzipping $zip_name"
     exit 1
   fi
+
+  echo ""
+  echo "Installing $pkg_name (requires sudo)..."
+  sudo installer -pkg "$pkg_name" -target /
+
+  cd - >/dev/null
+
+  if ! command -v "$name" &>/dev/null; then
+    echo "ERROR: $name still not found after install."
+    exit 1
+  fi
+  echo "$name installed successfully."
+  echo ""
 }
 
-check_tool receivemidi
-check_tool sendmidi
+if ! command -v receivemidi &>/dev/null; then
+  install_tool receivemidi "$RECEIVEMIDI_URL"
+fi
+
+if ! command -v sendmidi &>/dev/null; then
+  install_tool sendmidi "$SENDMIDI_URL"
+fi
 
 echo "=== E2E MIDI Message Test ==="
 echo "Remote: $REMOTE_IP:$PORT"
