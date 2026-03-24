@@ -32,6 +32,16 @@ class RtpMidiSession {
   /// Stream of session state changes.
   Stream<SessionState> get onStateChanged => _controller.onStateChanged;
 
+  /// Completes when startup clock sync exchanges have finished and
+  /// the remote peer is ready to accept MIDI data.
+  ///
+  /// Await this before sending to ensure delivery:
+  /// ```dart
+  /// await session.onReady;
+  /// session.send(NoteOn(channel: 0, note: 60, velocity: 100));
+  /// ```
+  Future<void> get onReady => _controller.onReady;
+
   /// Stream of incoming MIDI messages from the remote peer.
   Stream<MidiMessage> get onMidiMessage => _controller.onMidiMessage;
 

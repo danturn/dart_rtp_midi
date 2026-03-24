@@ -77,9 +77,9 @@ void main(List<String> args) async {
         exit(1);
       }
     }
-    print('Session ready. Waiting for startup sync...');
-    await Future.delayed(const Duration(seconds: 2));
-    print('Starting message test...\n');
+    print('Waiting for startup sync to complete...');
+    await session.onReady;
+    print('Startup sync complete. Starting message test...\n');
 
     await _runMessageTest(session);
 

@@ -39,8 +39,8 @@ void main(List<String> args) async {
   }
 
   // Wait for startup sync exchanges to complete (Apple needs multiple).
-  print('Ready. Waiting 3s for startup sync...');
-  await Future.delayed(const Duration(seconds: 3));
+  print('Ready. Waiting for startup sync...');
+  await controller.onReady;
 
   print('Sending Note On C4...');
   controller.sendMidi(const NoteOn(channel: 0, note: 60, velocity: 100));

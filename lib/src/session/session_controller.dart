@@ -70,8 +70,19 @@ class SessionController {
   /// SysEx reassembler for multi-packet SysEx messages.
   final _sysExReassembler = SysExReassembler();
 
-  /// Whether startup rapid sync has been done.
+  /// Whether startup rapid sync has been sent.
   bool _startupSyncDone = false;
+
+  /// Number of completed clock sync exchanges since connection.
+  int _completedSyncCount = 0;
+
+  /// Completes when enough startup sync exchanges have finished for
+  /// Apple's CoreMIDI to route MIDI (requires ~6 exchanges).
+  final _startupSyncCompleter = Completer<void>();
+
+  /// The minimum number of completed CK exchanges before MIDI routing
+  /// is considered active (matches rtpmidid's behavior).
+  static const int _startupSyncThreshold = 6;
 
   /// Whether this controller has been disposed.
   bool _disposed = false;
@@ -118,6 +129,13 @@ class SessionController {
 
   /// The most recent clock synchronization result, if any.
   ClockSyncResult? get lastSyncResult => _lastSyncResult;
+
+  /// Completes when enough startup clock sync exchanges have finished
+  /// for the remote peer to accept MIDI data.
+  ///
+  /// Apple's CoreMIDI requires multiple clock sync exchanges before it
+  /// routes MIDI. Await this before sending to ensure delivery.
+  Future<void> get onReady => _startupSyncCompleter.future;
 
   /// Stream of incoming MIDI messages from the remote peer.
   Stream<MidiMessage> get onMidiMessage => _midiController.stream;
@@ -390,12 +408,23 @@ class SessionController {
         );
         _sendClockSyncPacket(ck2);
         _lastSyncResult = computeOffset(ck2);
+        _completedSyncCount++;
+        _checkStartupSyncComplete();
         _applyEvent(SessionEvent.clockSyncComplete);
 
       case 2:
         // We received CK2 (we were the responder for this exchange).
         _lastSyncResult = computeOffset(ck);
+        _completedSyncCount++;
+        _checkStartupSyncComplete();
         _applyEvent(SessionEvent.clockSyncComplete);
+    }
+  }
+
+  void _checkStartupSyncComplete() {
+    if (!_startupSyncCompleter.isCompleted &&
+        _completedSyncCount >= _startupSyncThreshold) {
+      _startupSyncCompleter.complete();
     }
   }
 
