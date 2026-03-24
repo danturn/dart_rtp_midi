@@ -1,0 +1,17 @@
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get install -y \
+    git cmake g++ pkg-config \
+    libasound2-dev libavahi-client-dev libfmt-dev libspdlog-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 https://github.com/davidmoreno/rtpmidid.git /opt/rtpmidid
+
+WORKDIR /opt/rtpmidid
+RUN mkdir build && cd build && cmake .. && make -j$(nproc)
+
+# Expose control and data ports
+EXPOSE 5004/udp 5005/udp
+
+# Run rtpmidid in the foreground
+CMD ["/opt/rtpmidid/build/src/rtpmidid", "--name", "Docker rtpmidid"]
