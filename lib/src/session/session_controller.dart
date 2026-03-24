@@ -64,8 +64,8 @@ class SessionController {
   /// Incoming MIDI message stream.
   final _midiController = StreamController<MidiMessage>.broadcast();
 
-  /// Outgoing RTP sequence number (uint16, wrapping).
-  int _outgoingSequenceNumber = 0;
+  /// Outgoing RTP sequence number (uint16, wrapping, random start per RFC 3550).
+  int _outgoingSequenceNumber = _random.nextInt(0xFFFF);
 
   /// SysEx reassembler for multi-packet SysEx messages.
   final _sysExReassembler = SysExReassembler();
@@ -135,7 +135,7 @@ class SessionController {
         sequenceNumber: _nextSequenceNumber(),
         timestamp: _rtpTimestamp(),
         ssrc: _localSsrc,
-        marker: true,
+        marker: false,
       ),
       commands: [TimestampedMidiCommand(0, message)],
     );

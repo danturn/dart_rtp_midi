@@ -43,7 +43,7 @@ class RtpHeader {
     this.padding = false,
     this.extension = false,
     this.csrcCount = 0,
-    this.marker = true,
+    this.marker = false,
     this.payloadType = 97,
     required this.sequenceNumber,
     required this.timestamp,
