@@ -8,7 +8,7 @@ The first open-source RTP-MIDI library for Dart/Flutter — connect to macOS Net
 
 > **This library is under active development and is not yet ready for production use.**
 >
-> **What works now (Phases 1-4):**
+> **What works now (Phases 1-5):**
 > - Session discovery, invitation handshake (IN/OK/NO/BY), and graceful disconnect
 > - Clock synchronization (CK0/CK1/CK2 three-way exchange)
 > - Host mode (accept inbound connections) and Client mode (discover/connect outbound)
@@ -16,9 +16,10 @@ The first open-source RTP-MIDI library for Dart/Flutter — connect to macOS Net
 > - Send and receive all MIDI 1.0 messages (channel voice, system common, system real-time, SysEx)
 > - RTP header codec, variable-length delta timestamps, SysEx reassembly
 > - Recovery journal codecs: journal header + system chapters (D, V, Q, F, X) + channel chapters (P, C, M, W, N, E, T, A)
+> - **Recovery journal pipeline**: every outgoing packet includes a recovery journal; on packet loss, the receiver parses the journal and emits corrective MIDI messages (fixes stuck notes, wrong controllers, etc.)
 >
 > **What does NOT work yet:**
-> - Wire journal into send/receive pipeline (Phase 5)
+> - RTCP-based closed-loop journal trimming (Phase 6)
 > - Published on pub.dev
 >
 > See [Roadmap](#roadmap) below for the full plan.
@@ -149,7 +150,7 @@ Apple's CoreMIDI requires multiple rapid clock sync exchanges at startup before 
 
 ## Testing
 
-720 tests covering all codecs, state machine, recovery journal (system + channel chapters), and MIDI roundtrip integration.
+871 tests covering all codecs, state machine, recovery journal (system + channel chapters), journal pipeline integration, and MIDI roundtrip integration.
 
 ```bash
 dart test                            # Run all tests
@@ -170,12 +171,13 @@ dart run example/midi_message_test.dart 192.168.1.50 5004
 
 ## Apple Compatibility
 
-Verified against macOS 26.3 Network MIDI (Audio MIDI Setup + MIDI Monitor). All MIDI 1.0 message types confirmed working: Note On/Off, Control Change, Program Change, Pitch Bend, Channel/Poly Aftertouch, SysEx, and all System Real-Time messages.
+Verified against macOS 26.3 Network MIDI (Audio MIDI Setup + MIDI Monitor). All MIDI 1.0 message types confirmed working: Note On/Off, Control Change, Program Change, Pitch Bend, Channel/Poly Aftertouch, SysEx, and all System Real-Time messages. Recovery journals verified via Wireshark packet capture — all chapters dissect correctly.
 
 Key Apple-specific requirements handled automatically:
 - Rapid startup clock sync (6 exchanges, matching [rtpmidid](https://github.com/davidmoreno/rtpmidid))
 - RTP marker bit M=0 (RFC 6295)
 - Random sequence number start (RFC 3550)
+- Recovery journal in every data packet (J=1, chapters P/C/W/N/T/A)
 
 ## Roadmap
 
@@ -185,8 +187,9 @@ Key Apple-specific requirements handled automatically:
 | 2 | **RTP MIDI payload** — send/receive MIDI messages, RTP header, delta timestamps, SysEx reassembly | Done |
 | 3 | **Recovery journal: system chapters** — D, V, Q, F, X chapters for system message resilience | Done |
 | 4 | **Recovery journal: channel chapters** — P, C, M, W, N, E, T, A chapters for channel message resilience | Done |
-| 5 | **Integration + checkpoint management** — wire journal into send/receive pipeline, receiver feedback | Planned |
-| 6 | **Polish + publish** — docs, examples, pub.dev package, CI, interop testing | Planned |
+| 5 | **Recovery journal pipeline** — wire journal into send/receive, packet loss detection, corrective MIDI emission, offbit NoteOff bitmap, Chapter C toggle tool recovery | Done |
+| 6 | **RTCP closed-loop trimming** — checkpoint advancement via RTCP feedback, journal size reduction | Planned |
+| 7 | **Polish + publish** — docs, examples, pub.dev package, CI, interop testing | Planned |
 
 ## License
 

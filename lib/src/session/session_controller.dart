@@ -7,6 +7,11 @@ import '../api/rtp_midi_config.dart';
 import '../rtp/midi_command_codec.dart';
 import '../rtp/rtp_header.dart';
 import '../rtp/rtp_midi_payload.dart';
+import '../rtp/journal/journal_builder.dart';
+import '../rtp/journal/journal_recovery.dart';
+import '../rtp/journal/midi_state.dart';
+import '../rtp/journal/sequence_tracker.dart';
+import '../rtp/journal/state_update.dart';
 import '../rtp/sysex_reassembly.dart';
 import '../transport/transport.dart';
 import 'clock_sync.dart';
@@ -87,6 +92,18 @@ class SessionController {
   /// Whether this controller has been disposed.
   bool _disposed = false;
 
+  /// Recovery journal state: tracks MIDI state for outgoing packets.
+  MidiState _senderState = MidiState.empty;
+
+  /// Recovery journal state: tracks MIDI state as received.
+  MidiState _receiverState = MidiState.empty;
+
+  /// Detects sequence number gaps in incoming packets.
+  SequenceTracker _sequenceTracker = SequenceTracker.initial;
+
+  /// Checkpoint sequence number for the recovery journal (first packet sent).
+  int? _checkpointSeqNum;
+
   /// Creates a session controller.
   ///
   /// [transport] must already be bound. [localSsrc] is the SSRC identifier
@@ -151,14 +168,21 @@ class SessionController {
       return;
     }
 
+    _senderState = updateState(_senderState, message);
+    final seqNum = _nextSequenceNumber();
+    _checkpointSeqNum ??= seqNum;
+    final journalBytes = buildJournal(_senderState, _checkpointSeqNum!);
+
     final payload = RtpMidiPayload(
       header: RtpHeader(
-        sequenceNumber: _nextSequenceNumber(),
+        sequenceNumber: seqNum,
         timestamp: _rtpTimestamp(),
         ssrc: _localSsrc,
         marker: false,
       ),
       commands: [TimestampedMidiCommand(0, message)],
+      hasJournal: journalBytes != null,
+      journalData: journalBytes,
     );
 
     _transport.sendData(
@@ -450,7 +474,25 @@ class SessionController {
     final payload = RtpMidiPayload.decode(data);
     if (payload == null) return;
 
+    final (nextTracker, gap) = SequenceTracker.process(
+        _sequenceTracker, payload.header.sequenceNumber);
+    _sequenceTracker = nextTracker;
+
+    // On gap with journal present, compute corrective messages.
+    if (gap && payload.journalData != null) {
+      final corrective =
+          recoverFromJournal(payload.journalData!, _receiverState);
+      for (final msg in corrective) {
+        _receiverState = updateState(_receiverState, msg);
+        if (!_midiController.isClosed) {
+          _midiController.add(msg);
+        }
+      }
+    }
+
+    // Emit regular commands and update receiver state.
     for (final cmd in payload.commands) {
+      _receiverState = updateState(_receiverState, cmd.message);
       if (!_midiController.isClosed) {
         _midiController.add(cmd.message);
       }
