@@ -64,6 +64,9 @@ final client = RtpMidiClient(
 final session = await client.connectToAddress('192.168.1.50', 5004);
 print('Connected to ${session.remoteName}');
 
+// Wait for startup sync (required for Apple compatibility)
+await session.onReady;
+
 // Send MIDI
 session.send(NoteOn(channel: 0, note: 60, velocity: 100));
 session.send(ControlChange(channel: 0, controller: 7, value: 100));
@@ -141,6 +144,8 @@ idle → invitingControl → invitingData → connected → synchronizing → re
 
 Sessions use a two-phase invitation (control port, then data port) followed by periodic CK0/CK1/CK2 clock synchronization, matching Apple's RTP-MIDI implementation.
 
+Apple's CoreMIDI requires multiple rapid clock sync exchanges at startup before it routes MIDI. The library handles this automatically — `session.onReady` completes when the remote peer is ready to accept MIDI.
+
 ## Testing
 
 390 tests covering all codecs, state machine, and MIDI roundtrip integration.
@@ -162,14 +167,14 @@ receivemidi dev "Network Session"
 dart run example/midi_message_test.dart 192.168.1.50 5004
 ```
 
-## Compatibility Targets
+## Apple Compatibility
 
-Tested against:
-- macOS Audio MIDI Setup (Network MIDI)
+Verified against macOS 26.3 Network MIDI (Audio MIDI Setup + MIDI Monitor). All MIDI 1.0 message types confirmed working: Note On/Off, Control Change, Program Change, Pitch Bend, Channel/Poly Aftertouch, SysEx, and all System Real-Time messages.
 
-Planned:
-- rtpMIDI for Windows
-- Cubase, Logic Pro
+Key Apple-specific requirements handled automatically:
+- Rapid startup clock sync (6 exchanges, matching [rtpmidid](https://github.com/davidmoreno/rtpmidid))
+- RTP marker bit M=0 (RFC 6295)
+- Random sequence number start (RFC 3550)
 
 ## Roadmap
 
