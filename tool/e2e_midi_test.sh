@@ -121,10 +121,9 @@ RECV_PID=$!
 # Give it a moment to start listening.
 sleep 1
 
-# Run the Dart test sender.
+# Run the Dart test sender (--exit flag makes it exit after sending).
 echo "Running Dart MIDI sender..."
-dart run "$PROJECT_DIR/example/midi_message_test.dart" "$REMOTE_IP" "$PORT" 2>&1 | \
-  grep -E '^\s*(>>|---|\-\-\- Test)' || true
+dart run "$PROJECT_DIR/example/midi_message_test.dart" "$REMOTE_IP" "$PORT" --exit 2>&1
 
 # Give receivemidi time to flush.
 sleep 2

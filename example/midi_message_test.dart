@@ -20,14 +20,18 @@ import 'package:dart_rtp_midi/rtp_midi.dart';
 
 void main(List<String> args) async {
   if (args.isEmpty) {
-    print('Usage: dart run example/midi_message_test.dart <ip> [port]');
+    print(
+        'Usage: dart run example/midi_message_test.dart <ip> [port] [--exit]');
     print('');
     print('Sends every MIDI message type and prints incoming MIDI.');
+    print('  --exit  Exit after sending (for automated testing)');
     exit(1);
   }
 
-  final address = args[0];
-  final port = args.length > 1 ? int.parse(args[1]) : 5004;
+  final exitAfterSend = args.contains('--exit');
+  final positionalArgs = args.where((a) => !a.startsWith('--')).toList();
+  final address = positionalArgs[0];
+  final port = positionalArgs.length > 1 ? int.parse(positionalArgs[1]) : 5004;
 
   print('Connecting to $address:$port ...');
 
@@ -76,6 +80,15 @@ void main(List<String> args) async {
     print('Session ready. Starting message test...\n');
 
     await _runMessageTest(session);
+
+    if (exitAfterSend) {
+      // Give a moment for the last messages to be sent.
+      await Future.delayed(const Duration(seconds: 1));
+      await session.disconnect();
+      await client.dispose();
+      print('\nDone. Sent all message types.');
+      exit(0);
+    }
 
     print(
         '\n--- Test complete. Listening for incoming MIDI. Ctrl+C to quit. ---\n');
