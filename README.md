@@ -8,16 +8,16 @@ The first open-source RTP-MIDI library for Dart/Flutter — connect to macOS Net
 
 > **This library is under active development and is not yet ready for production use.**
 >
-> **What works now (Phase 1):**
+> **What works now (Phases 1-2):**
 > - Session discovery, invitation handshake (IN/OK/NO/BY), and graceful disconnect
 > - Clock synchronization (CK0/CK1/CK2 three-way exchange)
 > - Host mode (accept inbound connections) and Client mode (discover/connect outbound)
 > - Full state machine with exponential backoff retries
+> - Send and receive all MIDI 1.0 messages (channel voice, system common, system real-time, SysEx)
+> - RTP header codec, variable-length delta timestamps, SysEx reassembly
 >
 > **What does NOT work yet:**
-> - Sending or receiving MIDI messages (Phase 2)
 > - Recovery journal for packet loss resilience (Phases 3-4)
-> - SysEx fragmentation/reassembly
 > - Published on pub.dev
 >
 > See [Roadmap](#roadmap) below for the full plan.
@@ -37,9 +37,16 @@ await host.start();
 print('Listening on port ${host.controlPort}');
 
 host.onSessionConnected.listen((session) {
-  print('Connected: ${session.remoteName} (${session.remoteAddress})');
+  print('Connected: ${session.remoteName}');
+
+  session.onMidiMessage.listen((msg) {
+    print('Received: $msg');
+  });
+
   session.onStateChanged.listen((state) {
-    print('State: $state');
+    if (state == SessionState.ready) {
+      session.send(NoteOn(channel: 0, note: 60, velocity: 100));
+    }
   });
 });
 ```
@@ -57,9 +64,13 @@ final client = RtpMidiClient(
 final session = await client.connectToAddress('192.168.1.50', 5004);
 print('Connected to ${session.remoteName}');
 
-// Or discover via mDNS (requires MdnsDiscoverer implementation)
-client.discoverSessions().listen((service) {
-  print('Found: ${service.name} at ${service.address}:${service.port}');
+// Send MIDI
+session.send(NoteOn(channel: 0, note: 60, velocity: 100));
+session.send(ControlChange(channel: 0, controller: 7, value: 100));
+
+// Receive MIDI
+session.onMidiMessage.listen((msg) {
+  print('Received: $msg');
 });
 ```
 
@@ -130,10 +141,33 @@ idle → invitingControl → invitingData → connected → synchronizing → re
 
 Sessions use a two-phase invitation (control port, then data port) followed by periodic CK0/CK1/CK2 clock synchronization, matching Apple's RTP-MIDI implementation.
 
+## Testing
+
+390 tests covering all codecs, state machine, and MIDI roundtrip integration.
+
+```bash
+dart test                            # Run all tests
+dart format --set-exit-if-changed .  # Check formatting
+dart analyze --fatal-infos .         # Check for lint issues
+```
+
+For real-device validation against macOS Network MIDI:
+
+```bash
+# On the Mac: capture decoded MIDI output
+brew install receivemidi
+receivemidi dev "Network Session"
+
+# From Dart: send every MIDI message type
+dart run example/midi_message_test.dart 192.168.1.50 5004
+```
+
 ## Compatibility Targets
 
-Will be tested against (once MIDI payload is implemented):
+Tested against:
 - macOS Audio MIDI Setup (Network MIDI)
+
+Planned:
 - rtpMIDI for Windows
 - Cubase, Logic Pro
 
@@ -142,7 +176,7 @@ Will be tested against (once MIDI payload is implemented):
 | Phase | Description | Status |
 |-------|-------------|--------|
 | 1 | **Session management** — invitation handshake, clock sync, bye, state machine | Done |
-| 2 | **RTP MIDI payload** — send/receive MIDI messages, RTP header, delta timestamps, SysEx fragmentation | Next |
+| 2 | **RTP MIDI payload** — send/receive MIDI messages, RTP header, delta timestamps, SysEx reassembly | Done |
 | 3 | **Recovery journal: system chapters** — D, V, Q, F, X chapters for system message resilience | Planned |
 | 4 | **Recovery journal: channel chapters** — P, C, M, W, N, E, T, A chapters for channel message resilience | Planned |
 | 5 | **Integration + checkpoint management** — wire journal into send/receive pipeline, receiver feedback | Planned |
