@@ -105,11 +105,9 @@ void main(List<String> args) async {
   await Future.delayed(const Duration(milliseconds: 100));
   controller.sendMidi(const PitchBend(channel: 0, value: 8192));
   await Future.delayed(const Duration(milliseconds: 100));
-  controller
-      .sendMidi(const ChannelAftertouch(channel: 0, pressure: 64));
+  controller.sendMidi(const ChannelAftertouch(channel: 0, pressure: 64));
   await Future.delayed(const Duration(milliseconds: 100));
-  controller.sendMidi(
-      const PolyAftertouch(channel: 0, note: 60, pressure: 50));
+  controller.sendMidi(const PolyAftertouch(channel: 0, note: 60, pressure: 50));
   await Future.delayed(const Duration(milliseconds: 100));
   controller.sendMidi(const NoteOn(channel: 9, note: 36, velocity: 127));
   await Future.delayed(const Duration(milliseconds: 100));

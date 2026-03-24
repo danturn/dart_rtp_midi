@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import '../api/midi_message.dart';
 import '../api/rtp_midi_config.dart';
+import '../api/session_error.dart';
 import '../rtp/midi_command_codec.dart';
 import '../rtp/rtp_header.dart';
 import '../rtp/rtp_midi_payload.dart';
@@ -71,6 +72,9 @@ class SessionController {
 
   /// Incoming MIDI message stream.
   final _midiController = StreamController<MidiMessage>.broadcast();
+
+  /// Error stream.
+  final _errorController = StreamController<SessionError>.broadcast();
 
   /// Outgoing RTP sequence number (uint16, wrapping, random start per RFC 3550).
   int _outgoingSequenceNumber = _random.nextInt(0xFFFF);
@@ -160,6 +164,9 @@ class SessionController {
   /// Stream of incoming MIDI messages from the remote peer.
   Stream<MidiMessage> get onMidiMessage => _midiController.stream;
 
+  /// Stream of errors encountered during the session.
+  Stream<SessionError> get onError => _errorController.stream;
+
   /// Send a MIDI message to the remote peer.
   ///
   /// The message is wrapped in an RTP-MIDI payload and sent via the data port.
@@ -168,6 +175,12 @@ class SessionController {
     if (_state != SessionState.ready &&
         _state != SessionState.connected &&
         _state != SessionState.synchronizing) {
+      _emitError(ProtocolViolation(
+        message: 'Cannot send MIDI in state $_state',
+        address: _remoteAddress,
+        port: _remoteDataPort,
+        reason: ProtocolViolationReason.sendBeforeReady,
+      ));
       return;
     }
 
@@ -262,6 +275,7 @@ class SessionController {
     await _dataSub?.cancel();
     await _stateController.close();
     await _midiController.close();
+    await _errorController.close();
     _sysExReassembler.reset();
   }
 
@@ -288,10 +302,30 @@ class SessionController {
         _handleRsPacket(datagram.data);
         return;
       }
-      final packet = ExchangePacket.decode(datagram.data);
+      ExchangePacket? packet;
+      try {
+        packet = ExchangePacket.decode(datagram.data);
+      } on FormatException {
+        _emitError(MalformedPacket(
+          message: 'Invalid UTF-8 in exchange packet on control port',
+          address: datagram.address,
+          port: datagram.port,
+          rawBytes: datagram.data,
+          packetType: PacketType.exchange,
+        ));
+        return;
+      }
       if (packet != null) {
         _handleExchangePacket(packet, datagram.address, datagram.port,
             isControlPort: true);
+      } else {
+        _emitError(MalformedPacket(
+          message: 'Failed to decode exchange packet on control port',
+          address: datagram.address,
+          port: datagram.port,
+          rawBytes: datagram.data,
+          packetType: PacketType.exchange,
+        ));
       }
       return;
     }
@@ -314,10 +348,30 @@ class SessionController {
     }
     if (isClock == false) {
       // It's an exchange packet (has 0xFFFF signature but not CK).
-      final packet = ExchangePacket.decode(data);
+      ExchangePacket? packet;
+      try {
+        packet = ExchangePacket.decode(data);
+      } on FormatException {
+        _emitError(MalformedPacket(
+          message: 'Invalid UTF-8 in exchange packet on data port',
+          address: datagram.address,
+          port: datagram.port,
+          rawBytes: data,
+          packetType: PacketType.exchange,
+        ));
+        return;
+      }
       if (packet != null) {
         _handleExchangePacket(packet, datagram.address, datagram.port,
             isControlPort: false);
+      } else {
+        _emitError(MalformedPacket(
+          message: 'Failed to decode exchange packet on data port',
+          address: datagram.address,
+          port: datagram.port,
+          rawBytes: data,
+          packetType: PacketType.exchange,
+        ));
       }
       return;
     }
@@ -346,6 +400,12 @@ class SessionController {
         _handleNo(isControlPort: isControlPort);
 
       case ExchangeCommand.bye:
+        _emitError(PeerDisconnected(
+          message: 'Remote peer sent BYE',
+          address: address,
+          port: port,
+          reason: PeerDisconnectedReason.byeReceived,
+        ));
         _applyEvent(SessionEvent.byeReceived);
     }
   }
@@ -390,7 +450,18 @@ class SessionController {
 
   void _handleOk(ExchangePacket packet, {required bool isControlPort}) {
     // Verify the token matches our outstanding invitation.
-    if (packet.initiatorToken != _initiatorToken) return;
+    if (packet.initiatorToken != _initiatorToken) {
+      _emitError(ProtocolViolation(
+        message: 'OK response has wrong initiator token '
+            '(expected 0x${_initiatorToken.toRadixString(16)}, '
+            'got 0x${packet.initiatorToken.toRadixString(16)})',
+        address: _remoteAddress,
+        port: isControlPort ? _remoteControlPort : _remoteDataPort,
+        rawBytes: packet.encode(),
+        reason: ProtocolViolationReason.tokenMismatch,
+      ));
+      return;
+    }
 
     _remoteSsrc = packet.ssrc;
     _remoteName = packet.name;
@@ -404,8 +475,20 @@ class SessionController {
 
   void _handleNo({required bool isControlPort}) {
     if (isControlPort) {
+      _emitError(ConnectionFailed(
+        message: 'Invitation rejected on control port',
+        address: _remoteAddress,
+        port: _remoteControlPort,
+        reason: ConnectionFailedReason.rejected,
+      ));
       _applyEvent(SessionEvent.controlNoReceived);
     } else {
+      _emitError(ConnectionFailed(
+        message: 'Invitation rejected on data port',
+        address: _remoteAddress,
+        port: _remoteDataPort,
+        reason: ConnectionFailedReason.dataHandshakeFailed,
+      ));
       _applyEvent(SessionEvent.dataNoReceived);
     }
   }
@@ -420,7 +503,16 @@ class SessionController {
     // but we accept CK packets on either port for maximum compatibility.
 
     final ck = ClockSyncPacket.decode(datagram.data);
-    if (ck == null) return;
+    if (ck == null) {
+      _emitError(MalformedPacket(
+        message: 'Failed to decode clock sync packet',
+        address: datagram.address,
+        port: datagram.port,
+        rawBytes: datagram.data,
+        packetType: PacketType.clockSync,
+      ));
+      return;
+    }
 
     switch (ck.count) {
       case 0:
@@ -483,7 +575,16 @@ class SessionController {
 
   void _handleRtpMidiPacket(Uint8List data) {
     final payload = RtpMidiPayload.decode(data);
-    if (payload == null) return;
+    if (payload == null) {
+      _emitError(MalformedPacket(
+        message: 'Failed to decode RTP-MIDI packet',
+        address: _remoteAddress,
+        port: _remoteDataPort,
+        rawBytes: data,
+        packetType: PacketType.rtpMidi,
+      ));
+      return;
+    }
 
     final (nextTracker, gap) = SequenceTracker.process(
         _sequenceTracker, payload.header.sequenceNumber);
@@ -526,7 +627,7 @@ class SessionController {
 
   void _handleRsPacket(Uint8List data) {
     final rs = RsPacket.decode(data);
-    if (rs == null) return;
+    if (rs == null) return; // Can't happen: isRsPacket() has same guards.
     final confirmedSeq = rs.sequenceNumber;
     if (_checkpointSeqNum != null &&
         seqAtOrAfter(confirmedSeq, _checkpointSeqNum!)) {
@@ -674,6 +775,12 @@ class SessionController {
 
     if (delay == null) {
       // Max retries exhausted.
+      _emitError(ConnectionFailed(
+        message: 'No response after ${_config.maxInvitationRetries} retries',
+        address: _remoteAddress,
+        port: _remoteControlPort,
+        reason: ConnectionFailedReason.timeout,
+      ));
       _applyEvent(SessionEvent.timeout);
       return;
     }
@@ -696,8 +803,14 @@ class SessionController {
 
   void _scheduleClockSyncTimeout() {
     _clockSyncTimeoutTimer?.cancel();
-    _clockSyncTimeoutTimer = Timer(const Duration(seconds: 5), () {
+    _clockSyncTimeoutTimer = Timer(_config.clockSyncTimeout, () {
       if (_disposed) return;
+      _emitError(ProtocolViolation(
+        message: 'Clock sync timed out',
+        address: _remoteAddress,
+        port: _remoteDataPort,
+        reason: ProtocolViolationReason.clockSyncTimeout,
+      ));
       _applyEvent(SessionEvent.clockSyncTimeout);
     });
   }
@@ -753,5 +866,11 @@ class SessionController {
     final seq = _outgoingSequenceNumber;
     _outgoingSequenceNumber = (_outgoingSequenceNumber + 1) & 0xFFFF;
     return seq;
+  }
+
+  void _emitError(SessionError error) {
+    if (!_errorController.isClosed) {
+      _errorController.add(error);
+    }
   }
 }

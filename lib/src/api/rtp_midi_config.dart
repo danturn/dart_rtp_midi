@@ -26,6 +26,9 @@ class RtpMidiConfig {
   /// Duration after which an idle session is considered timed out.
   final Duration sessionTimeout;
 
+  /// Duration to wait for a clock sync response before timing out.
+  final Duration clockSyncTimeout;
+
   const RtpMidiConfig({
     this.name = 'Dart RTP-MIDI',
     this.port = 0,
@@ -33,6 +36,7 @@ class RtpMidiConfig {
     this.maxInvitationRetries = 12,
     this.invitationRetryBaseInterval = const Duration(milliseconds: 1500),
     this.sessionTimeout = const Duration(seconds: 60),
+    this.clockSyncTimeout = const Duration(seconds: 5),
   }) : assert(
           port == 0 || port > 0 && port % 2 == 0,
           'Port must be 0 (auto) or a positive even number',
@@ -47,7 +51,8 @@ class RtpMidiConfig {
           clockSyncInterval == other.clockSyncInterval &&
           maxInvitationRetries == other.maxInvitationRetries &&
           invitationRetryBaseInterval == other.invitationRetryBaseInterval &&
-          sessionTimeout == other.sessionTimeout;
+          sessionTimeout == other.sessionTimeout &&
+          clockSyncTimeout == other.clockSyncTimeout;
 
   @override
   int get hashCode => Object.hash(
@@ -57,6 +62,7 @@ class RtpMidiConfig {
         maxInvitationRetries,
         invitationRetryBaseInterval,
         sessionTimeout,
+        clockSyncTimeout,
       );
 
   @override
@@ -64,5 +70,6 @@ class RtpMidiConfig {
       'clockSyncInterval: $clockSyncInterval, '
       'maxInvitationRetries: $maxInvitationRetries, '
       'retryBase: $invitationRetryBaseInterval, '
-      'sessionTimeout: $sessionTimeout)';
+      'sessionTimeout: $sessionTimeout, '
+      'clockSyncTimeout: $clockSyncTimeout)';
 }

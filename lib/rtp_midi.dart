@@ -31,6 +31,7 @@ export 'src/api/rtp_midi_client.dart' show RtpMidiClient, RtpMidiService;
 export 'src/api/rtp_midi_config.dart' show RtpMidiConfig;
 export 'src/api/rtp_midi_host.dart' show RtpMidiHost;
 export 'src/api/rtp_midi_session.dart' show RtpMidiSession;
+export 'src/api/session_error.dart';
 
 // Session state (needed by consumers to react to state changes)
 export 'src/session/session_state.dart' show SessionState;

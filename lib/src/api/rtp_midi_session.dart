@@ -1,4 +1,5 @@
 import 'midi_message.dart';
+import 'session_error.dart';
 import '../session/session_controller.dart';
 import '../session/session_state.dart';
 
@@ -44,6 +45,9 @@ class RtpMidiSession {
 
   /// Stream of incoming MIDI messages from the remote peer.
   Stream<MidiMessage> get onMidiMessage => _controller.onMidiMessage;
+
+  /// Stream of errors encountered during the session.
+  Stream<SessionError> get onError => _controller.onError;
 
   /// Send a MIDI message to the remote peer.
   void send(MidiMessage message) => _controller.sendMidi(message);
