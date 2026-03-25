@@ -600,6 +600,10 @@ class SessionController {
           _midiController.add(msg);
         }
       }
+      // Mark journal as processed so late-join recovery stops.
+      if (!_sequenceTracker.hasProcessedJournal) {
+        _sequenceTracker = _sequenceTracker.withJournalProcessed();
+      }
     }
 
     // Emit regular commands and update receiver state.
