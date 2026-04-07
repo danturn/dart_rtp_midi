@@ -6,9 +6,9 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:dart_rtp_midi/rtp_midi.dart';
-import 'package:dart_rtp_midi/src/session/session_controller.dart';
-import 'package:dart_rtp_midi/src/transport/udp_transport.dart';
+import 'package:rtp_midi/rtp_midi.dart';
+import 'package:rtp_midi/src/session/session_controller.dart';
+import 'package:rtp_midi/src/transport/udp_transport.dart';
 
 void main(List<String> args) async {
   final address = args.isNotEmpty ? args[0] : '192.168.1.89';

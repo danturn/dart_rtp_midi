@@ -1,11 +1,11 @@
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/rtp/journal/system_chapter_d.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/system_chapter_f.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/system_chapter_q.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/system_chapter_v.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/system_chapter_x.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/system_journal.dart';
+import 'package:rtp_midi/src/rtp/journal/system_chapter_d.dart';
+import 'package:rtp_midi/src/rtp/journal/system_chapter_f.dart';
+import 'package:rtp_midi/src/rtp/journal/system_chapter_q.dart';
+import 'package:rtp_midi/src/rtp/journal/system_chapter_v.dart';
+import 'package:rtp_midi/src/rtp/journal/system_chapter_x.dart';
+import 'package:rtp_midi/src/rtp/journal/system_journal.dart';
 import 'package:test/test.dart';
 
 void main() {

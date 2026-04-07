@@ -7,7 +7,7 @@ library;
 
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/session/exchange_packet.dart';
+import 'package:rtp_midi/src/session/exchange_packet.dart';
 import 'package:test/test.dart';
 
 /// Build a Uint8List from a list of int bytes.

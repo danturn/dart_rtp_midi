@@ -1,14 +1,14 @@
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/rtp/journal/channel_chapter_a.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/channel_chapter_c.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/channel_chapter_e.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/channel_chapter_m.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/channel_chapter_n.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/channel_chapter_p.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/channel_chapter_t.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/channel_chapter_w.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/channel_journal.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_chapter_a.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_chapter_c.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_chapter_e.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_chapter_m.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_chapter_n.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_chapter_p.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_chapter_t.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_chapter_w.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_journal.dart';
 import 'package:test/test.dart';
 
 void main() {

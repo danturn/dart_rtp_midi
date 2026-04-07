@@ -1,4 +1,4 @@
-import 'package:dart_rtp_midi/src/rtp/journal/seq_compare.dart';
+import 'package:rtp_midi/src/rtp/journal/seq_compare.dart';
 import 'package:test/test.dart';
 
 void main() {

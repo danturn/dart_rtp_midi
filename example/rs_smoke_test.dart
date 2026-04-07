@@ -7,11 +7,11 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/rtp/rtp_midi_payload.dart';
-import 'package:dart_rtp_midi/src/session/rs_packet.dart';
-import 'package:dart_rtp_midi/src/session/session_controller.dart';
-import 'package:dart_rtp_midi/src/transport/udp_transport.dart';
-import 'package:dart_rtp_midi/rtp_midi.dart';
+import 'package:rtp_midi/src/rtp/rtp_midi_payload.dart';
+import 'package:rtp_midi/src/session/rs_packet.dart';
+import 'package:rtp_midi/src/session/session_controller.dart';
+import 'package:rtp_midi/src/transport/udp_transport.dart';
+import 'package:rtp_midi/rtp_midi.dart';
 
 class SpyTransport implements Transport {
   final UdpTransport _inner;

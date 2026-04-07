@@ -1,9 +1,9 @@
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/api/midi_message.dart';
-import 'package:dart_rtp_midi/src/rtp/midi_command_codec.dart';
-import 'package:dart_rtp_midi/src/rtp/rtp_header.dart';
-import 'package:dart_rtp_midi/src/rtp/rtp_midi_payload.dart';
+import 'package:rtp_midi/src/api/midi_message.dart';
+import 'package:rtp_midi/src/rtp/midi_command_codec.dart';
+import 'package:rtp_midi/src/rtp/rtp_header.dart';
+import 'package:rtp_midi/src/rtp/rtp_midi_payload.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -1,26 +1,45 @@
-import 'package:dart_rtp_midi/src/rtp/journal/sequence_tracker.dart';
+import 'package:rtp_midi/src/rtp/journal/sequence_tracker.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('SequenceTracker', () {
-    test('first packet is never a gap', () {
+    test('first packet signals gap for late-join journal recovery', () {
       final (tracker, gap) = SequenceTracker.process(
         SequenceTracker.initial,
         100,
       );
-      expect(gap, isFalse);
+      expect(gap, isTrue);
       expect(tracker, isNotNull);
     });
 
-    test('consecutive sequence numbers are not a gap', () {
+    test('consecutive sequence numbers are not a gap after journal processed',
+        () {
       var tracker = SequenceTracker.initial;
       bool gap;
 
       (tracker, gap) = SequenceTracker.process(tracker, 100);
-      expect(gap, isFalse);
+      expect(gap, isTrue); // first packet — late-join gap
+      tracker = tracker.withJournalProcessed();
 
       (tracker, gap) = SequenceTracker.process(tracker, 101);
       expect(gap, isFalse);
+
+      (tracker, gap) = SequenceTracker.process(tracker, 102);
+      expect(gap, isFalse);
+    });
+
+    test('signals gap until journal is processed', () {
+      var tracker = SequenceTracker.initial;
+      bool gap;
+
+      (tracker, gap) = SequenceTracker.process(tracker, 100);
+      expect(gap, isTrue); // first packet
+
+      // Still signals gap because journal hasn't been processed yet
+      (tracker, gap) = SequenceTracker.process(tracker, 101);
+      expect(gap, isTrue);
+
+      tracker = tracker.withJournalProcessed();
 
       (tracker, gap) = SequenceTracker.process(tracker, 102);
       expect(gap, isFalse);
@@ -31,7 +50,7 @@ void main() {
       bool gap;
 
       (tracker, gap) = SequenceTracker.process(tracker, 100);
-      expect(gap, isFalse);
+      tracker = tracker.withJournalProcessed();
 
       // Skip 101
       (tracker, gap) = SequenceTracker.process(tracker, 102);
@@ -43,7 +62,7 @@ void main() {
       bool gap;
 
       (tracker, gap) = SequenceTracker.process(tracker, 100);
-      expect(gap, isFalse);
+      tracker = tracker.withJournalProcessed();
 
       // Skip 101-109
       (tracker, gap) = SequenceTracker.process(tracker, 110);
@@ -55,7 +74,7 @@ void main() {
       bool gap;
 
       (tracker, gap) = SequenceTracker.process(tracker, 65535);
-      expect(gap, isFalse);
+      tracker = tracker.withJournalProcessed();
 
       (tracker, gap) = SequenceTracker.process(tracker, 0);
       expect(gap, isFalse);
@@ -66,7 +85,7 @@ void main() {
       bool gap;
 
       (tracker, gap) = SequenceTracker.process(tracker, 65535);
-      expect(gap, isFalse);
+      tracker = tracker.withJournalProcessed();
 
       // Skip 0, receive 1
       (tracker, gap) = SequenceTracker.process(tracker, 1);
@@ -78,6 +97,8 @@ void main() {
       bool gap;
 
       (tracker, gap) = SequenceTracker.process(tracker, 100);
+      tracker = tracker.withJournalProcessed();
+
       (tracker, gap) = SequenceTracker.process(tracker, 105); // gap
       expect(gap, isTrue);
 
@@ -86,14 +107,15 @@ void main() {
       expect(gap, isFalse);
     });
 
-    test('first packet with seqnum 0 is not a gap', () {
+    test('first packet with seqnum 0 signals late-join gap', () {
       final (tracker, gap) = SequenceTracker.process(
         SequenceTracker.initial,
         0,
       );
-      expect(gap, isFalse);
-      // Next should be 1
-      final (_, gap2) = SequenceTracker.process(tracker, 1);
+      expect(gap, isTrue);
+
+      final processed = tracker.withJournalProcessed();
+      final (_, gap2) = SequenceTracker.process(processed, 1);
       expect(gap2, isFalse);
     });
 
@@ -102,6 +124,8 @@ void main() {
       bool gap;
 
       (tracker, gap) = SequenceTracker.process(tracker, 100);
+      tracker = tracker.withJournalProcessed();
+
       (tracker, gap) = SequenceTracker.process(tracker, 100); // duplicate
       expect(gap, isTrue);
     });

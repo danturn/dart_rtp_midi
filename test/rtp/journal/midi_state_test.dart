@@ -1,4 +1,4 @@
-import 'package:dart_rtp_midi/src/rtp/journal/midi_state.dart';
+import 'package:rtp_midi/src/rtp/journal/midi_state.dart';
 import 'package:test/test.dart';
 
 void main() {

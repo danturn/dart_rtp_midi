@@ -1,5 +1,5 @@
-import 'package:dart_rtp_midi/src/session/clock_sync.dart';
-import 'package:dart_rtp_midi/src/session/exchange_packet.dart';
+import 'package:rtp_midi/src/session/clock_sync.dart';
+import 'package:rtp_midi/src/session/exchange_packet.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/session/rs_packet.dart';
+import 'package:rtp_midi/src/session/rs_packet.dart';
 import 'package:test/test.dart';
 
 void main() {

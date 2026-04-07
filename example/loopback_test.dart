@@ -9,7 +9,7 @@ library;
 
 import 'dart:io';
 
-import 'package:dart_rtp_midi/rtp_midi.dart';
+import 'package:rtp_midi/rtp_midi.dart';
 
 void main() async {
   print('=== RTP-MIDI Loopback Test ===');

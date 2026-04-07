@@ -1,6 +1,6 @@
-import 'package:dart_rtp_midi/src/api/midi_message.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/midi_state.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/state_update.dart';
+import 'package:rtp_midi/src/api/midi_message.dart';
+import 'package:rtp_midi/src/rtp/journal/midi_state.dart';
+import 'package:rtp_midi/src/rtp/journal/state_update.dart';
 import 'package:test/test.dart';
 
 /// Extract just the value from a `Seq<int>` map for easy assertion.

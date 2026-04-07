@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/api/midi_message.dart';
-import 'package:dart_rtp_midi/src/api/rtp_midi_config.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/journal_header.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/channel_journal.dart';
-import 'package:dart_rtp_midi/src/rtp/midi_command_codec.dart';
-import 'package:dart_rtp_midi/src/rtp/rtp_header.dart';
-import 'package:dart_rtp_midi/src/rtp/rtp_midi_payload.dart';
-import 'package:dart_rtp_midi/src/session/session_controller.dart';
-import 'package:dart_rtp_midi/src/session/session_state.dart';
-import 'package:dart_rtp_midi/src/transport/transport.dart';
+import 'package:rtp_midi/src/api/midi_message.dart';
+import 'package:rtp_midi/src/api/rtp_midi_config.dart';
+import 'package:rtp_midi/src/rtp/journal/journal_header.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_journal.dart';
+import 'package:rtp_midi/src/rtp/midi_command_codec.dart';
+import 'package:rtp_midi/src/rtp/rtp_header.dart';
+import 'package:rtp_midi/src/rtp/rtp_midi_payload.dart';
+import 'package:rtp_midi/src/session/session_controller.dart';
+import 'package:rtp_midi/src/session/session_state.dart';
+import 'package:rtp_midi/src/transport/transport.dart';
 import 'package:test/test.dart';
 
 // ---------------------------------------------------------------------------
@@ -523,7 +523,7 @@ void main() {
         controllers: {7: 100},
       );
 
-      // First packet the receiver sees is 101 (no gap for first packet)
+      // First packet the receiver sees is 101 — late-join recovery fires.
       _injectRtpMidiWithJournal(
         transport,
         seqNum: 101,
@@ -532,9 +532,14 @@ void main() {
       );
       await Future.delayed(Duration.zero);
 
-      // First packet is never a gap, so no recovery. Just the CC.
-      expect(messages.length, 1);
-      expect(messages[0],
+      // Late-join recovery (RFC 4695 §4): journal recovery emits corrective
+      // messages (NoteOn 60 + CC7) before the regular CC7 command.
+      expect(
+        messages.any((m) => m is NoteOn && m.note == 60 && m.velocity == 100),
+        isTrue,
+        reason: 'Late-join recovery should emit NoteOn 60 from journal',
+      );
+      expect(messages.last,
           const ControlChange(channel: 0, controller: 7, value: 100));
 
       // Now packet 103 arrives (102 lost), journal still has note 60 + CC7
@@ -729,13 +734,13 @@ void main() {
       expect(ch.chapterN!.logs[0].noteNum, 60);
     });
 
-    test('no recovery on first packet (even with journal)', () async {
+    test('first packet triggers late-join recovery from journal', () async {
       await driveToReady();
 
       final messages = <MidiMessage>[];
       final sub = controller.onMidiMessage.listen(messages.add);
 
-      // First packet with journal — should NOT trigger recovery
+      // First packet with journal — late-join recovery (RFC 4695 §4)
       final journalBytes = _buildNoteJournal(
         checkpointSeqNum: 50,
         channel: 0,
@@ -750,9 +755,18 @@ void main() {
       );
       await Future.delayed(Duration.zero);
 
-      // Only the regular command, no recovery
-      expect(messages.length, 1);
-      expect(messages[0], const NoteOn(channel: 0, note: 67, velocity: 90));
+      // Recovery emits corrective NoteOn 60 + NoteOn 64, then regular command
+      expect(
+        messages.any((m) => m is NoteOn && m.note == 60 && m.velocity == 100),
+        isTrue,
+        reason: 'Should recover NoteOn 60 from journal',
+      );
+      expect(
+        messages.any((m) => m is NoteOn && m.note == 64 && m.velocity == 80),
+        isTrue,
+        reason: 'Should recover NoteOn 64 from journal',
+      );
+      expect(messages.last, const NoteOn(channel: 0, note: 67, velocity: 90));
 
       await sub.cancel();
     });

@@ -1,17 +1,17 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/api/midi_message.dart';
-import 'package:dart_rtp_midi/src/api/rtp_midi_config.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/channel_journal.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/journal_header.dart';
-import 'package:dart_rtp_midi/src/rtp/midi_command_codec.dart';
-import 'package:dart_rtp_midi/src/rtp/rtp_header.dart';
-import 'package:dart_rtp_midi/src/rtp/rtp_midi_payload.dart';
-import 'package:dart_rtp_midi/src/session/rs_packet.dart';
-import 'package:dart_rtp_midi/src/session/session_controller.dart';
-import 'package:dart_rtp_midi/src/session/session_state.dart';
-import 'package:dart_rtp_midi/src/transport/transport.dart';
+import 'package:rtp_midi/src/api/midi_message.dart';
+import 'package:rtp_midi/src/api/rtp_midi_config.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_journal.dart';
+import 'package:rtp_midi/src/rtp/journal/journal_header.dart';
+import 'package:rtp_midi/src/rtp/midi_command_codec.dart';
+import 'package:rtp_midi/src/rtp/rtp_header.dart';
+import 'package:rtp_midi/src/rtp/rtp_midi_payload.dart';
+import 'package:rtp_midi/src/session/rs_packet.dart';
+import 'package:rtp_midi/src/session/session_controller.dart';
+import 'package:rtp_midi/src/session/session_state.dart';
+import 'package:rtp_midi/src/transport/transport.dart';
 import 'package:test/test.dart';
 
 // ---------------------------------------------------------------------------

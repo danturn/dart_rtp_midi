@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/api/midi_message.dart';
+import 'package:rtp_midi/src/api/midi_message.dart';
 import 'package:test/test.dart';
 
 void main() {

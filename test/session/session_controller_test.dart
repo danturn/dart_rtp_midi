@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/session/exchange_packet.dart';
-import 'package:dart_rtp_midi/src/session/invitation_protocol.dart';
-import 'package:dart_rtp_midi/src/session/clock_sync.dart';
-import 'package:dart_rtp_midi/src/session/session_state.dart';
-import 'package:dart_rtp_midi/src/transport/transport.dart';
+import 'package:rtp_midi/src/session/exchange_packet.dart';
+import 'package:rtp_midi/src/session/invitation_protocol.dart';
+import 'package:rtp_midi/src/session/clock_sync.dart';
+import 'package:rtp_midi/src/session/session_state.dart';
+import 'package:rtp_midi/src/transport/transport.dart';
 import 'package:test/test.dart';
 
 // ---------------------------------------------------------------------------

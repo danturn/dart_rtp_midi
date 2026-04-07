@@ -1,11 +1,11 @@
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/api/midi_message.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/channel_journal.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/journal_builder.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/journal_header.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/midi_state.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/state_update.dart';
+import 'package:rtp_midi/src/api/midi_message.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_journal.dart';
+import 'package:rtp_midi/src/rtp/journal/journal_builder.dart';
+import 'package:rtp_midi/src/rtp/journal/journal_header.dart';
+import 'package:rtp_midi/src/rtp/journal/midi_state.dart';
+import 'package:rtp_midi/src/rtp/journal/state_update.dart';
 import 'package:test/test.dart';
 
 /// Update state with seq=1 so entries pass the builder's seq > checkpoint filter.

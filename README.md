@@ -1,34 +1,19 @@
-# dart_rtp_midi
+# rtp_midi
 
 Cross-platform [RTP-MIDI](https://www.rfc-editor.org/rfc/rfc6295) implementation in pure Dart. Network MIDI transport for iOS, Android, macOS, Windows, and Linux.
 
 The first open-source RTP-MIDI library for Dart/Flutter — connect to macOS Network MIDI sessions, rtpMIDI (Windows), DAWs, and hardware over WiFi.
 
-## Status: Work in Progress
+## Status
 
-> **This library is under active development and is not yet ready for production use.**
->
-> **What works now (Phases 1-5):**
-> - Session discovery, invitation handshake (IN/OK/NO/BY), and graceful disconnect
-> - Clock synchronization (CK0/CK1/CK2 three-way exchange)
-> - Host mode (accept inbound connections) and Client mode (discover/connect outbound)
-> - Full state machine with exponential backoff retries
-> - Send and receive all MIDI 1.0 messages (channel voice, system common, system real-time, SysEx)
-> - RTP header codec, variable-length delta timestamps, SysEx reassembly
-> - Recovery journal codecs: journal header + system chapters (D, V, Q, F, X) + channel chapters (P, C, M, W, N, E, T, A)
-> - **Recovery journal pipeline**: every outgoing packet includes a recovery journal; on packet loss, the receiver parses the journal and emits corrective MIDI messages (fixes stuck notes, wrong controllers, etc.)
->
-> **What does NOT work yet:**
-> - Published on pub.dev
->
-> See [Roadmap](#roadmap) below for the full plan.
+Fully functional — session management, all MIDI 1.0 messages, and complete recovery journal are implemented and tested (871 tests). Verified against macOS CoreMIDI. See [Roadmap](#roadmap) for details.
 
 ## Quick Start
 
 ### Host (accept incoming connections)
 
 ```dart
-import 'package:dart_rtp_midi/rtp_midi.dart';
+import 'package:rtp_midi/rtp_midi.dart';
 
 final host = RtpMidiHost(
   config: RtpMidiConfig(name: 'My Dart Session', port: 5004),
@@ -55,7 +40,7 @@ host.onSessionConnected.listen((session) {
 ### Client (discover and connect)
 
 ```dart
-import 'package:dart_rtp_midi/rtp_midi.dart';
+import 'package:rtp_midi/rtp_midi.dart';
 
 final client = RtpMidiClient(
   config: RtpMidiConfig(name: 'My Dart Client'),
@@ -187,7 +172,7 @@ Key Apple-specific requirements handled automatically:
 | 3 | **Recovery journal: system chapters** — D, V, Q, F, X chapters for system message resilience | Done |
 | 4 | **Recovery journal: channel chapters** — P, C, M, W, N, E, T, A chapters for channel message resilience | Done |
 | 5 | **Recovery journal pipeline** — wire journal into send/receive, packet loss detection, corrective MIDI emission, offbit NoteOff bitmap, Chapter C toggle tool recovery | Done |
-| 6 | **Polish + publish** — docs, examples, pub.dev package, CI, interop testing | Planned |
+| 6 | **Polish + publish** — docs, examples, pub.dev package, CI, interop testing | Done |
 
 ## License
 

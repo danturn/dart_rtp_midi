@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:dart_rtp_midi/src/rtp/journal/channel_journal_header.dart';
+import 'package:rtp_midi/src/rtp/journal/channel_journal_header.dart';
 import 'package:test/test.dart';
 
 void main() {

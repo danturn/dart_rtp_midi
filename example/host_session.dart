@@ -12,7 +12,7 @@ library;
 
 import 'dart:io';
 
-import 'package:dart_rtp_midi/rtp_midi.dart';
+import 'package:rtp_midi/rtp_midi.dart';
 
 void main(List<String> args) async {
   final port = args.isNotEmpty ? int.parse(args[0]) : 5004;

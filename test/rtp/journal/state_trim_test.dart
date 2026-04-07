@@ -1,7 +1,7 @@
-import 'package:dart_rtp_midi/src/api/midi_message.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/midi_state.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/state_trim.dart';
-import 'package:dart_rtp_midi/src/rtp/journal/state_update.dart';
+import 'package:rtp_midi/src/api/midi_message.dart';
+import 'package:rtp_midi/src/rtp/journal/midi_state.dart';
+import 'package:rtp_midi/src/rtp/journal/state_trim.dart';
+import 'package:rtp_midi/src/rtp/journal/state_update.dart';
 import 'package:test/test.dart';
 
 void main() {
