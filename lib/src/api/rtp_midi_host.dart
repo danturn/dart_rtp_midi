@@ -49,7 +49,7 @@ class RtpMidiHost {
   RtpMidiHost({
     required this.config,
     MdnsBroadcaster? broadcaster,
-  })  : _broadcaster = broadcaster ?? NoOpMdnsBroadcaster(),
+  })  : _broadcaster = broadcaster ?? const NoOpMdnsBroadcaster(),
         _localSsrc = _generateSsrc();
 
   /// Whether the host is currently listening.

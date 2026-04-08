@@ -38,6 +38,9 @@ class MdnsServiceInfo {
 /// Implementations can use bonsoir (Flutter), multicast_dns (pure Dart),
 /// or any other mDNS library.
 abstract class MdnsBroadcaster {
+  /// Creates an [MdnsBroadcaster].
+  const MdnsBroadcaster();
+
   /// Register a service with the given [name], [type], and [port].
   ///
   /// The service will be advertised on the local network until [stop]
@@ -57,6 +60,9 @@ abstract class MdnsBroadcaster {
 /// Implementations can use bonsoir (Flutter), multicast_dns (pure Dart),
 /// or any other mDNS library.
 abstract class MdnsDiscoverer {
+  /// Creates an [MdnsDiscoverer].
+  const MdnsDiscoverer();
+
   /// Start discovering services of the given [type].
   ///
   /// Returns a stream of resolved services. The stream stays open until
@@ -72,6 +78,9 @@ abstract class MdnsDiscoverer {
 /// Use this when mDNS registration is not needed (e.g., direct connections
 /// only, or in tests).
 class NoOpMdnsBroadcaster implements MdnsBroadcaster {
+  /// Creates a no-op broadcaster.
+  const NoOpMdnsBroadcaster();
+
   @override
   Future<void> start({
     required String name,
@@ -87,6 +96,9 @@ class NoOpMdnsBroadcaster implements MdnsBroadcaster {
 ///
 /// Use this in tests or when discovery is not needed.
 class NoOpMdnsDiscoverer implements MdnsDiscoverer {
+  /// Creates a no-op discoverer.
+  const NoOpMdnsDiscoverer();
+
   @override
   Stream<MdnsServiceInfo> discover(String type) => const Stream.empty();
 

@@ -1,3 +1,8 @@
+## 0.1.3
+
+- Complete 100% dartdoc coverage (abstract class constructors)
+- Add example/example.dart for pub.dev example tab
+
 ## 0.1.2
 
 - Remove hardcoded test counts and stale roadmap link from README

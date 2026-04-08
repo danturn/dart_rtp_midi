@@ -70,7 +70,7 @@ class RtpMidiClient {
   RtpMidiClient({
     required this.config,
     MdnsDiscoverer? discoverer,
-  })  : _discoverer = discoverer ?? NoOpMdnsDiscoverer(),
+  })  : _discoverer = discoverer ?? const NoOpMdnsDiscoverer(),
         _localSsrc = _generateSsrc();
 
   /// Discover available RTP-MIDI sessions on the local network.

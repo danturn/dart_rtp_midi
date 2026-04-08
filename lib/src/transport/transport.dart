@@ -21,6 +21,9 @@ class Datagram {
 /// RTP-MIDI uses a pair of UDP ports: an even-numbered control port
 /// and the next odd-numbered data port.
 abstract class Transport {
+  /// Creates a [Transport].
+  const Transport();
+
   /// The local control port (even).
   int get controlPort;
 
