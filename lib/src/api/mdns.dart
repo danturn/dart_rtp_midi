@@ -11,6 +11,7 @@ class MdnsServiceInfo {
   /// The port number of the service.
   final int port;
 
+  /// Creates an mDNS service info entry.
   const MdnsServiceInfo({
     required this.name,
     required this.address,

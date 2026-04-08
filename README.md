@@ -163,17 +163,6 @@ Key Apple-specific requirements handled automatically:
 - Random sequence number start (RFC 3550)
 - Recovery journal in every data packet (J=1, chapters P/C/W/N/T/A)
 
-## Roadmap
-
-| Phase | Description | Status |
-|-------|-------------|--------|
-| 1 | **Session management** — invitation handshake, clock sync, bye, state machine | Done |
-| 2 | **RTP MIDI payload** — send/receive MIDI messages, RTP header, delta timestamps, SysEx reassembly | Done |
-| 3 | **Recovery journal: system chapters** — D, V, Q, F, X chapters for system message resilience | Done |
-| 4 | **Recovery journal: channel chapters** — P, C, M, W, N, E, T, A chapters for channel message resilience | Done |
-| 5 | **Recovery journal pipeline** — wire journal into send/receive, packet loss detection, corrective MIDI emission, offbit NoteOff bitmap, Chapter C toggle tool recovery | Done |
-| 6 | **Polish + publish** — docs, examples, pub.dev package, CI, interop testing | Done |
-
 ## License
 
 MIT

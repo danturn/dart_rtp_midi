@@ -2,20 +2,52 @@ import 'dart:math';
 import 'dart:typed_data';
 
 /// Packet types for [MalformedPacket] errors.
-enum PacketType { exchange, clockSync, rtpMidi, receiverFeedback }
+enum PacketType {
+  /// AppleMIDI exchange (invitation, OK, NO, BY) packet.
+  exchange,
+
+  /// Clock synchronization (CK0/CK1/CK2) packet.
+  clockSync,
+
+  /// RTP-MIDI data packet.
+  rtpMidi,
+
+  /// Receiver feedback (RS) packet.
+  receiverFeedback,
+}
 
 /// Reasons a connection attempt failed.
-enum ConnectionFailedReason { timeout, rejected, dataHandshakeFailed }
+enum ConnectionFailedReason {
+  /// The invitation timed out after exhausting retries.
+  timeout,
+
+  /// The remote peer rejected the invitation.
+  rejected,
+
+  /// The data-port handshake failed after the control port succeeded.
+  dataHandshakeFailed,
+}
 
 /// Reasons for a protocol violation.
 enum ProtocolViolationReason {
+  /// The initiator token in the response did not match the one sent.
   tokenMismatch,
+
+  /// Attempted to send MIDI before the session was ready.
   sendBeforeReady,
+
+  /// Clock sync timed out.
   clockSyncTimeout
 }
 
 /// Reasons a peer disconnected.
-enum PeerDisconnectedReason { byeReceived, idleTimeout }
+enum PeerDisconnectedReason {
+  /// The remote peer sent a BYE packet.
+  byeReceived,
+
+  /// The session timed out due to inactivity.
+  idleTimeout,
+}
 
 /// Typed errors emitted by [RtpMidiSession.onError].
 ///
@@ -48,6 +80,7 @@ class MalformedPacket extends SessionError {
   /// Which packet type was expected.
   final PacketType packetType;
 
+  /// Creates a [MalformedPacket] error.
   MalformedPacket({
     required this.message,
     required this.address,
@@ -77,6 +110,7 @@ class ConnectionFailed extends SessionError {
   /// Why the connection failed.
   final ConnectionFailedReason reason;
 
+  /// Creates a [ConnectionFailed] error.
   ConnectionFailed({
     required this.message,
     required this.address,
@@ -108,6 +142,7 @@ class ProtocolViolation extends SessionError {
   /// Why this is a violation.
   final ProtocolViolationReason reason;
 
+  /// Creates a [ProtocolViolation] error.
   ProtocolViolation({
     required this.message,
     required this.address,
@@ -142,6 +177,7 @@ class PeerDisconnected extends SessionError {
   /// Why the peer disconnected.
   final PeerDisconnectedReason reason;
 
+  /// Creates a [PeerDisconnected] error.
   PeerDisconnected({
     required this.message,
     required this.address,

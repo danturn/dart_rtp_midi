@@ -1,3 +1,8 @@
+## 0.1.1
+
+- Add dartdoc comments to all public API elements (constructors, fields, enum values)
+- Remove completed roadmap from README
+
 ## 0.1.0
 
 - Initial release

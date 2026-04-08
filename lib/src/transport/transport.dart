@@ -3,10 +3,16 @@ import 'dart:async';
 
 /// A received datagram with its source address information.
 class Datagram {
+  /// The raw bytes of the datagram.
   final Uint8List data;
+
+  /// The source IP address.
   final String address;
+
+  /// The source port number.
   final int port;
 
+  /// Creates a datagram from [data] with source [address] and [port].
   const Datagram(this.data, this.address, this.port);
 }
 

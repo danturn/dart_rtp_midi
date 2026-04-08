@@ -116,6 +116,7 @@ class SessionTransition {
   /// Side effects that the shell should execute in order.
   final List<SessionEffect> effects;
 
+  /// Creates a state transition with the given [newState] and [effects].
   const SessionTransition(this.newState, [this.effects = const []]);
 
   @override

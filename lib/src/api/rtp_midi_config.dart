@@ -29,6 +29,7 @@ class RtpMidiConfig {
   /// Duration to wait for a clock sync response before timing out.
   final Duration clockSyncTimeout;
 
+  /// Creates an RTP-MIDI configuration with the given parameters.
   const RtpMidiConfig({
     this.name = 'Dart RTP-MIDI',
     this.port = 0,

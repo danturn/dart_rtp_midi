@@ -19,6 +19,7 @@ class RtpMidiService {
   /// The control port of the service.
   final int port;
 
+  /// Creates a discovered service entry.
   const RtpMidiService({
     required this.name,
     required this.address,

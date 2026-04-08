@@ -111,10 +111,16 @@ sealed class MidiMessage {
 
 /// Note On message.
 class NoteOn extends MidiMessage {
+  /// MIDI channel (0–15).
   final int channel;
+
+  /// Note number (0–127).
   final int note;
+
+  /// Velocity (0–127).
   final int velocity;
 
+  /// Creates a Note On message.
   const NoteOn({
     required this.channel,
     required this.note,
@@ -141,10 +147,16 @@ class NoteOn extends MidiMessage {
 
 /// Note Off message.
 class NoteOff extends MidiMessage {
+  /// MIDI channel (0–15).
   final int channel;
+
+  /// Note number (0–127).
   final int note;
+
+  /// Release velocity (0–127).
   final int velocity;
 
+  /// Creates a Note Off message.
   const NoteOff({
     required this.channel,
     required this.note,
@@ -172,10 +184,16 @@ class NoteOff extends MidiMessage {
 
 /// Control Change message.
 class ControlChange extends MidiMessage {
+  /// MIDI channel (0–15).
   final int channel;
+
+  /// Controller number (0–127).
   final int controller;
+
+  /// Controller value (0–127).
   final int value;
 
+  /// Creates a Control Change message.
   const ControlChange({
     required this.channel,
     required this.controller,
@@ -204,9 +222,13 @@ class ControlChange extends MidiMessage {
 
 /// Program Change message.
 class ProgramChange extends MidiMessage {
+  /// MIDI channel (0–15).
   final int channel;
+
+  /// Program number (0–127).
   final int program;
 
+  /// Creates a Program Change message.
   const ProgramChange({required this.channel, required this.program});
 
   @override
@@ -230,9 +252,13 @@ class ProgramChange extends MidiMessage {
 ///
 /// [value] is a 14-bit value (0–16383) with 8192 as center.
 class PitchBend extends MidiMessage {
+  /// MIDI channel (0–15).
   final int channel;
+
+  /// 14-bit pitch bend value (0–16383, center = 8192).
   final int value;
 
+  /// Creates a Pitch Bend message.
   const PitchBend({required this.channel, required this.value});
 
   @override
@@ -253,9 +279,13 @@ class PitchBend extends MidiMessage {
 
 /// Channel Aftertouch (mono pressure).
 class ChannelAftertouch extends MidiMessage {
+  /// MIDI channel (0–15).
   final int channel;
+
+  /// Pressure value (0–127).
   final int pressure;
 
+  /// Creates a Channel Aftertouch message.
   const ChannelAftertouch({required this.channel, required this.pressure});
 
   @override
@@ -277,10 +307,16 @@ class ChannelAftertouch extends MidiMessage {
 
 /// Polyphonic Aftertouch (per-note pressure).
 class PolyAftertouch extends MidiMessage {
+  /// MIDI channel (0–15).
   final int channel;
+
+  /// Note number (0–127).
   final int note;
+
+  /// Pressure value (0–127).
   final int pressure;
 
+  /// Creates a Polyphonic Aftertouch message.
   const PolyAftertouch({
     required this.channel,
     required this.note,
@@ -312,8 +348,10 @@ class PolyAftertouch extends MidiMessage {
 
 /// MIDI Time Code Quarter Frame.
 class MtcQuarterFrame extends MidiMessage {
+  /// The MTC data byte (0–127).
   final int data;
 
+  /// Creates an MTC Quarter Frame message.
   const MtcQuarterFrame(this.data);
 
   @override
@@ -332,8 +370,10 @@ class MtcQuarterFrame extends MidiMessage {
 
 /// Song Position Pointer (14-bit value in MIDI beats).
 class SongPosition extends MidiMessage {
+  /// Position in MIDI beats (0–16383).
   final int position;
 
+  /// Creates a Song Position Pointer message.
   const SongPosition(this.position);
 
   @override
@@ -354,8 +394,10 @@ class SongPosition extends MidiMessage {
 
 /// Song Select.
 class SongSelect extends MidiMessage {
+  /// Song number (0–127).
   final int song;
 
+  /// Creates a Song Select message.
   const SongSelect(this.song);
 
   @override
@@ -374,6 +416,7 @@ class SongSelect extends MidiMessage {
 
 /// Tune Request.
 class TuneRequest extends MidiMessage {
+  /// Creates a Tune Request message.
   const TuneRequest();
 
   @override
@@ -396,6 +439,7 @@ class TuneRequest extends MidiMessage {
 
 /// Timing Clock.
 class TimingClock extends MidiMessage {
+  /// Creates a Timing Clock message.
   const TimingClock();
 
   @override
@@ -414,6 +458,7 @@ class TimingClock extends MidiMessage {
 
 /// Start.
 class Start extends MidiMessage {
+  /// Creates a Start message.
   const Start();
 
   @override
@@ -431,6 +476,7 @@ class Start extends MidiMessage {
 
 /// Continue.
 class Continue extends MidiMessage {
+  /// Creates a Continue message.
   const Continue();
 
   @override
@@ -448,6 +494,7 @@ class Continue extends MidiMessage {
 
 /// Stop.
 class Stop extends MidiMessage {
+  /// Creates a Stop message.
   const Stop();
 
   @override
@@ -465,6 +512,7 @@ class Stop extends MidiMessage {
 
 /// Active Sensing.
 class ActiveSensing extends MidiMessage {
+  /// Creates an Active Sensing message.
   const ActiveSensing();
 
   @override
@@ -483,6 +531,7 @@ class ActiveSensing extends MidiMessage {
 
 /// System Reset.
 class SystemReset extends MidiMessage {
+  /// Creates a System Reset message.
   const SystemReset();
 
   @override
@@ -507,8 +556,10 @@ class SystemReset extends MidiMessage {
 ///
 /// [data] contains the SysEx payload without the F0/F7 framing bytes.
 class SysEx extends MidiMessage {
+  /// SysEx payload bytes (without F0/F7 framing).
   final List<int> data;
 
+  /// Creates a System Exclusive message from [data] bytes.
   const SysEx(this.data);
 
   @override
