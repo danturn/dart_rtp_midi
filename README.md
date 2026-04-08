@@ -6,7 +6,7 @@ The first open-source RTP-MIDI library for Dart/Flutter — connect to macOS Net
 
 ## Status
 
-Fully functional — session management, all MIDI 1.0 messages, and complete recovery journal are implemented and tested (871 tests). Verified against macOS CoreMIDI. See [Roadmap](#roadmap) for details.
+Fully functional — session management, all MIDI 1.0 messages, and complete recovery journal are implemented and tested. Verified against macOS CoreMIDI.
 
 ## Quick Start
 
@@ -134,7 +134,7 @@ Apple's CoreMIDI requires multiple rapid clock sync exchanges at startup before 
 
 ## Testing
 
-871 tests covering all codecs, state machine, recovery journal (system + channel chapters), journal pipeline integration, and MIDI roundtrip integration.
+Comprehensive test suite covering all codecs, state machine, recovery journal (system + channel chapters), journal pipeline integration, and MIDI roundtrip integration.
 
 ```bash
 dart test                            # Run all tests

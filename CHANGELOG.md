@@ -1,3 +1,7 @@
+## 0.1.2
+
+- Remove hardcoded test counts and stale roadmap link from README
+
 ## 0.1.1
 
 - Add dartdoc comments to all public API elements (constructors, fields, enum values)
